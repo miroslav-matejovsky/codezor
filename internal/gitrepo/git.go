@@ -11,10 +11,6 @@ import (
 	"strings"
 )
 
-// EmptyTree is git's object hash for an empty tree. Diffing the first commit
-// in a repository against it is the only way to say "everything here is new".
-const EmptyTree = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-
 // Repo is a local git repository read through the git command line.
 type Repo struct {
 	dir string
@@ -58,74 +54,36 @@ func (r *Repo) ShortHash(ctx context.Context, rev string) (string, error) {
 	return r.text(ctx, "rev-parse", "--short", rev)
 }
 
-// Parent returns the first parent of rev, or EmptyTree when rev is the first
-// commit, so that a diff against the result always describes the whole commit.
-func (r *Repo) Parent(ctx context.Context, rev string) (string, error) {
-	out, err := r.text(ctx, "rev-list", "--parents", "-n", "1", rev)
-	if err != nil {
-		return "", err
-	}
-
-	// The line is "<commit> <parent>..." so a single field means no parent.
-	fields := strings.Fields(out)
-	if len(fields) < 2 {
-		return EmptyTree, nil
-	}
-
-	return fields[1], nil
-}
-
-// Diff reports the files changed between base and target. An empty target
-// means the working tree, so staged and unstaged edits are both included;
-// untracked files are not, see Untracked.
-func (r *Repo) Diff(ctx context.Context, base, target string) ([]FileDiff, error) {
-	args := []string{
+// WorkingFiles lists the files git reports in the work tree: the tracked ones
+// plus the untracked ones, with everything .gitignore covers left out. Paths
+// are relative to the work tree root and separated by slashes.
+//
+// A tracked file deleted on disk is still listed, because the index still
+// holds it. The caller finds it missing when it reads it, which is the only
+// place that race can be resolved.
+func (r *Repo) WorkingFiles(ctx context.Context) ([]string, error) {
+	out, err := r.raw(ctx,
 		// Paths stay literal UTF-8 instead of being escaped per byte.
 		"-c", "core.quotePath=false",
-		"diff",
-		// No context lines: each hunk header then describes only changed lines.
-		"-U0",
-		"--no-prefix",
-		"--no-color",
-		"--no-ext-diff",
-		"--no-textconv",
-		"--find-renames",
-		base,
-	}
-	if target != "" {
-		args = append(args, target)
-	}
-	args = append(args, "--")
-
-	out, err := r.raw(ctx, args...)
+		"ls-files", "--cached", "--others", "--exclude-standard", "-z",
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	return parseDiff(bytes.NewReader(out))
-}
-
-// Untracked lists the files git neither tracks nor ignores, relative to the
-// work tree root. They are part of the current state of the code.
-func (r *Repo) Untracked(ctx context.Context) ([]string, error) {
-	out, err := r.raw(ctx, "-c", "core.quotePath=false", "ls-files", "--others", "--exclude-standard", "-z")
-	if err != nil {
-		return nil, err
-	}
+	seen := map[string]bool{}
 
 	var paths []string
 	for p := range strings.SplitSeq(string(out), "\x00") {
-		if p != "" {
-			paths = append(paths, p)
+		if p == "" || seen[p] {
+			continue
 		}
+
+		seen[p] = true
+		paths = append(paths, p)
 	}
 
 	return paths, nil
-}
-
-// Blob returns the contents of path as of rev.
-func (r *Repo) Blob(ctx context.Context, rev, path string) ([]byte, error) {
-	return r.raw(ctx, "cat-file", "blob", rev+":"+path)
 }
 
 // WalkTree streams every regular file in rev's tree and calls fn with the

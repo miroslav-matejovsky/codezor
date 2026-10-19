@@ -86,60 +86,36 @@ func branchFixture(t *testing.T) string {
 	return dir
 }
 
+// The baseline holds a.go alone; the current side adds the committed d.go and
+// the untracked c.go, and counts neither the comments nor the blanks.
 func TestCompareCountsBothSides(t *testing.T) {
-	got, err := analyze.Compare(t.Context(), branchFixture(t), "main", "medium")
+	got, err := analyze.Compare(t.Context(), branchFixture(t), "main")
 	require.NoError(t, err)
 
 	require.Equal(t, "main", got.BaselineRef)
 	require.NotEmpty(t, got.BaselineHash)
 
-	// Baseline holds a.go alone, the working tree adds d.go and c.go.
 	require.Equal(t, []analyze.LanguageLOC{{Name: "Go", Baseline: 2, Current: 4}}, got.LOC)
-	require.Equal(t, analyze.LanguageLOC{Baseline: 2, Current: 4}, got.TotalLOC)
-	require.Equal(t, int64(2), got.TotalLOC.Delta())
-	require.InDelta(t, 100.0, got.TotalLOC.ChangePercent(), 0.001)
+	require.Equal(t, analyze.LanguageLOC{Baseline: 2, Current: 4}, got.Total)
+	require.Equal(t, int64(2), got.Total.Delta())
+	require.InDelta(t, 100.0, got.Total.ChangePercent(), 0.001)
 }
 
-// Churn counts code lines only: the comment that replaced a code line in a.go
-// is not an addition, and the comment in d.go is not either.
-func TestCompareChurnExcludesCommentsAndBlanks(t *testing.T) {
-	got, err := analyze.Compare(t.Context(), branchFixture(t), "main", "medium")
-	require.NoError(t, err)
-
-	require.Equal(t, analyze.Churn{Added: 3, Removed: 1}, got.Current)
-	require.Equal(t, int64(4), got.Current.Gross())
-	require.InDelta(t, 200.0, got.Current.Footprint(got.TotalLOC.Baseline), 0.001)
-
-	require.Equal(t, analyze.Churn{Added: 1}, got.LatestCommit)
-}
-
-// Net churn and the LOC delta measure the same change in the same unit, so
-// they have to agree.
-func TestCompareNetChurnMatchesLOCDelta(t *testing.T) {
-	got, err := analyze.Compare(t.Context(), branchFixture(t), "main", "medium")
-	require.NoError(t, err)
-
-	require.Equal(t, got.TotalLOC.Delta(), got.Current.Net())
-}
-
-// On main with nothing uncommitted the baseline is HEAD, so the tree matches
-// the baseline and only the commit itself shows any churn.
+// On main with nothing uncommitted the baseline is HEAD, so both sides match.
 func TestCompareCleanTreeOnBaselineBranch(t *testing.T) {
 	dir := newRepo(t)
 	write(t, dir, "a.go", aBaseline)
 	commit(t, dir, "baseline")
 
-	got, err := analyze.Compare(t.Context(), dir, "main", "medium")
+	got, err := analyze.Compare(t.Context(), dir, "main")
 	require.NoError(t, err)
 
 	require.Equal(t, []analyze.LanguageLOC{{Name: "Go", Baseline: 2, Current: 2}}, got.LOC)
-	require.Equal(t, analyze.Churn{}, got.Current)
-	require.Zero(t, got.TotalLOC.Delta())
-
-	// The first commit is compared against the empty tree, so all of it is new.
-	require.Equal(t, analyze.Churn{Added: 2}, got.LatestCommit)
+	require.Zero(t, got.Total.Delta())
 }
 
+// A file deleted on disk is still in the index, so the current side has to
+// treat it as gone rather than fail reading it.
 func TestCompareReportsDeletedCode(t *testing.T) {
 	dir := newRepo(t)
 	write(t, dir, "a.go", aBaseline)
@@ -148,33 +124,59 @@ func TestCompareReportsDeletedCode(t *testing.T) {
 
 	require.NoError(t, os.Remove(filepath.Join(dir, "d.go")))
 
-	got, err := analyze.Compare(t.Context(), dir, "main", "medium")
+	got, err := analyze.Compare(t.Context(), dir, "main")
 	require.NoError(t, err)
 
-	require.Equal(t, analyze.Churn{Removed: 1}, got.Current)
-	require.Equal(t, int64(-1), got.TotalLOC.Delta())
-	require.Equal(t, got.TotalLOC.Delta(), got.Current.Net())
+	require.Equal(t, []analyze.LanguageLOC{{Name: "Go", Baseline: 3, Current: 2}}, got.LOC)
+	require.Equal(t, int64(-1), got.Total.Delta())
 }
 
-// scc leaves ignore files out of a directory walk, so the baseline side has to
-// leave them out too: otherwise an unchanged .gitignore reads as deleted code
-// and the LOC delta stops matching the churn.
-func TestCompareExcludesIgnoreFiles(t *testing.T) {
+// Files git ignores are not part of the current state of the code.
+func TestCompareSkipsIgnoredFiles(t *testing.T) {
+	dir := newRepo(t)
+	write(t, dir, "a.go", aBaseline)
+	write(t, dir, ".gitignore", "generated.go\n")
+	commit(t, dir, "baseline")
+
+	write(t, dir, "generated.go", "package generated\n")
+
+	got, err := analyze.Compare(t.Context(), dir, "main")
+	require.NoError(t, err)
+
+	require.Equal(t, []analyze.LanguageLOC{{Name: "Go", Baseline: 2, Current: 2}}, got.LOC)
+}
+
+// scc leaves ignore files out of a count, so neither side may report the
+// .gitignore above as code.
+func TestCompareExcludesIgnoreFilesThemselves(t *testing.T) {
 	dir := newRepo(t)
 	write(t, dir, "a.go", aBaseline)
 	write(t, dir, ".gitignore", "bin/\n*.tmp\n")
 	commit(t, dir, "baseline")
 
-	got, err := analyze.Compare(t.Context(), dir, "main", "medium")
+	got, err := analyze.Compare(t.Context(), dir, "main")
 	require.NoError(t, err)
 
 	require.Equal(t, []analyze.LanguageLOC{{Name: "Go", Baseline: 2, Current: 2}}, got.LOC)
-	require.Equal(t, analyze.Churn{Added: 2}, got.LatestCommit)
-	require.Equal(t, got.TotalLOC.Delta(), got.Current.Net())
+}
+
+// A language the baseline did not hold still gets a row, with a zero baseline.
+func TestCompareReportsNewLanguages(t *testing.T) {
+	dir := branchFixture(t)
+	write(t, dir, "notes.md", "# Notes\n\nA line of prose.\n")
+
+	got, err := analyze.Compare(t.Context(), dir, "main")
+	require.NoError(t, err)
+
+	require.Equal(t, []analyze.LanguageLOC{
+		{Name: "Go", Baseline: 2, Current: 4},
+		{Name: "Markdown", Baseline: 0, Current: 2},
+	}, got.LOC)
+	require.Zero(t, got.LOC[1].ChangePercent())
 }
 
 func TestCompareRejectsNonRepository(t *testing.T) {
-	_, err := analyze.Compare(t.Context(), t.TempDir(), "main", "medium")
+	_, err := analyze.Compare(t.Context(), t.TempDir(), "main")
 	require.ErrorContains(t, err, "not a git repository")
 }
 
@@ -183,20 +185,11 @@ func TestCompareRejectsMissingBaselineBranch(t *testing.T) {
 	write(t, dir, "a.go", aBaseline)
 	commit(t, dir, "baseline")
 
-	_, err := analyze.Compare(t.Context(), dir, "trunk", "medium")
+	_, err := analyze.Compare(t.Context(), dir, "trunk")
 	require.ErrorContains(t, err, `"trunk" not found`)
 }
 
 func TestCompareRejectsRepositoryWithoutCommits(t *testing.T) {
-	_, err := analyze.Compare(t.Context(), newRepo(t), "main", "medium")
+	_, err := analyze.Compare(t.Context(), newRepo(t), "main")
 	require.ErrorContains(t, err, "no commits")
-}
-
-func TestCompareRejectsUnknownPreset(t *testing.T) {
-	dir := newRepo(t)
-	write(t, dir, "a.go", aBaseline)
-	commit(t, dir, "baseline")
-
-	_, err := analyze.Compare(t.Context(), dir, "main", "enormous")
-	require.ErrorContains(t, err, "enormous")
 }

@@ -130,68 +130,36 @@ func TestWalkTreeReportsUnknownRevision(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestDiffAgainstWorkingTreeSeesUncommittedEdits(t *testing.T) {
+// The working tree is the tracked files plus the untracked ones, with
+// everything .gitignore covers left out.
+func TestWorkingFilesListsTrackedAndUntracked(t *testing.T) {
 	repo, dir := newRepo(t)
 
-	write(t, dir, "a.go", "package a\n\nconst One = 1\n")
+	write(t, dir, "a.go", "package a\n")
+	write(t, dir, ".gitignore", "ignored.go\n")
 	commit(t, dir, "first")
-	base, err := repo.Head(t.Context())
-	require.NoError(t, err)
 
-	write(t, dir, "a.go", "package a\n\nconst One = 1\nconst Two = 2\n")
 	write(t, dir, "new.go", "package new\n")
+	write(t, dir, "ignored.go", "package ignored\n")
 
-	changes, err := repo.Diff(t.Context(), base, "")
+	files, err := repo.WorkingFiles(t.Context())
 	require.NoError(t, err)
-	require.Len(t, changes, 1)
-	require.Equal(t, "a.go", changes[0].NewPath)
-	require.Equal(t, []LineRange{{Start: 4, Count: 1}}, changes[0].Added)
-	require.Empty(t, changes[0].Removed)
-
-	untracked, err := repo.Untracked(t.Context())
-	require.NoError(t, err)
-	require.Equal(t, []string{"new.go"}, untracked)
+	require.ElementsMatch(t, []string{".gitignore", "a.go", "new.go"}, files)
 }
 
-func TestDiffBetweenCommits(t *testing.T) {
+// A tracked file deleted on disk is still in the index, so it is still listed
+// and the caller is the one that finds it missing.
+func TestWorkingFilesStillListsDeletedTrackedFiles(t *testing.T) {
 	repo, dir := newRepo(t)
 
-	write(t, dir, "a.go", "package a\nconst One = 1\n")
-	commit(t, dir, "first")
 	write(t, dir, "a.go", "package a\n")
-	commit(t, dir, "second")
-
-	parent, err := repo.Parent(t.Context(), "HEAD")
-	require.NoError(t, err)
-
-	changes, err := repo.Diff(t.Context(), parent, "HEAD")
-	require.NoError(t, err)
-	require.Len(t, changes, 1)
-	require.Equal(t, []LineRange{{Start: 2, Count: 1}}, changes[0].Removed)
-	require.Empty(t, changes[0].Added)
-}
-
-func TestParentOfFirstCommitIsEmptyTree(t *testing.T) {
-	repo, dir := newRepo(t)
-	write(t, dir, "a.go", "package a\n")
+	write(t, dir, "gone.go", "package gone\n")
 	commit(t, dir, "first")
+	require.NoError(t, os.Remove(filepath.Join(dir, "gone.go")))
 
-	parent, err := repo.Parent(t.Context(), "HEAD")
+	files, err := repo.WorkingFiles(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, EmptyTree, parent)
-}
-
-func TestBlobReadsCommittedContent(t *testing.T) {
-	repo, dir := newRepo(t)
-	write(t, dir, "a.go", "package a\n")
-	commit(t, dir, "first")
-
-	content, err := repo.Blob(t.Context(), "HEAD", "a.go")
-	require.NoError(t, err)
-	require.Equal(t, "package a\n", string(content))
-
-	_, err = repo.Blob(t.Context(), "HEAD", "missing.go")
-	require.Error(t, err)
+	require.ElementsMatch(t, []string{"a.go", "gone.go"}, files)
 }
 
 func TestHeadFailsWithoutCommits(t *testing.T) {

@@ -1,4 +1,4 @@
-// Command codezor measures the working tree of a git repository against the
+// Command codezor counts the code lines of a git repository against the
 // branch it forked from, and writes the result as markdown.
 package main
 
@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/miroslav-matejovsky/codezor/internal/analyze"
 	"github.com/miroslav-matejovsky/codezor/internal/report"
@@ -21,11 +20,9 @@ const baselineBranch = "main"
 func main() {
 	path := flag.String("path", ".", "directory inside the repository to analyze")
 	out := flag.String("out", "codezor.md", "markdown report to write")
-	preset := flag.String("locomo-preset", "medium",
-		"LOCOMO model tier: "+strings.Join(analyze.Presets, ", "))
 	flag.Parse()
 
-	if err := run(context.Background(), *path, *out, *preset); err != nil {
+	if err := run(context.Background(), *path, *out); err != nil {
 		fmt.Fprintln(os.Stderr, "codezor:", err)
 		os.Exit(1)
 	}
@@ -33,8 +30,8 @@ func main() {
 
 // run compares the tree and writes the report, so main only handles flags and
 // the exit code.
-func run(ctx context.Context, path, out, preset string) error {
-	comparison, err := analyze.Compare(ctx, path, baselineBranch, preset)
+func run(ctx context.Context, path, out string) error {
+	comparison, err := analyze.Compare(ctx, path, baselineBranch)
 	if err != nil {
 		return err
 	}

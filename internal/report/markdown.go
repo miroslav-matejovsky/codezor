@@ -17,9 +17,8 @@ func Markdown(c *analyze.Comparison) string {
 		"Current: working tree, including uncommitted and untracked files",
 		"",
 		"LOC is code lines as counted by [scc](https://github.com/boyter/scc):",
-		"comment and blank lines are left out of every number below, churn",
-		"included. The report carries no timestamp, so an unchanged tree renders",
-		"an unchanged report.",
+		"comment and blank lines are left out. The report carries no timestamp,",
+		"so an unchanged tree renders an unchanged report.",
 		"",
 		"## LOC",
 		"",
@@ -31,40 +30,7 @@ func Markdown(c *analyze.Comparison) string {
 		lines = append(lines, locRow(row.Name, row, false))
 	}
 
-	lines = append(lines,
-		locRow("Total", c.TotalLOC, true),
-		"",
-		"## Current Change",
-		"",
-	)
-	lines = append(lines, churnLines(c.Current, c.TotalLOC.Baseline)...)
-
-	lines = append(lines,
-		"",
-		"## Latest Commit",
-		"",
-	)
-	lines = append(lines, churnLines(c.LatestCommit, 0)...)
-
-	lines = append(lines,
-		"",
-		"## LOCOMO",
-		"",
-		"LOCOMO (LLM Output COst MOdel) estimates what producing the current",
-		"code with an LLM would cost. It scales with code volume and complexity,",
-		"and leaves out context reuse, test generation and debugging. It is a",
-		"ballpark figure, as COCOMO is for human development.",
-		"",
-		"| Estimate | Value |",
-		"| --- | ---: |",
-		fmt.Sprintf("| Model tier | %s |", c.Locomo.Preset),
-		fmt.Sprintf("| Input tokens | %s |", group(int64(c.Locomo.InputTokens))),
-		fmt.Sprintf("| Output tokens | %s |", group(int64(c.Locomo.OutputTokens))),
-		fmt.Sprintf("| Cost | $%.2f |", c.Locomo.Cost),
-		fmt.Sprintf("| Iteration factor | %.2f |", c.Locomo.IterationFactor),
-		fmt.Sprintf("| Generation time | %s |", duration(c.Locomo.GenerationSeconds)),
-		fmt.Sprintf("| Review time | %s |", duration(c.Locomo.ReviewHours*3600)),
-	)
+	lines = append(lines, locRow("Total", c.Total, true))
 
 	return strings.Join(lines, "\n") + "\n"
 }
@@ -99,25 +65,8 @@ func changeCell(row analyze.LanguageLOC) string {
 	return signedPercent(row.ChangePercent())
 }
 
-// churnLines renders one churn block. A baseline of zero leaves out the
-// footprint, which only means something relative to existing code.
-func churnLines(c analyze.Churn, baseline int64) []string {
-	lines := []string{
-		fmt.Sprintf("- Added LOC: %s", group(c.Added)),
-		fmt.Sprintf("- Removed LOC: %s", group(c.Removed)),
-		fmt.Sprintf("- Gross churn: %s LOC", group(c.Gross())),
-		fmt.Sprintf("- Net change: %s LOC", signed(c.Net())),
-	}
-
-	if baseline > 0 {
-		lines = append(lines, fmt.Sprintf("- Change footprint: %.1f%% of baseline LOC", c.Footprint(baseline)))
-	}
-
-	return lines
-}
-
-// group writes n with commas between digit groups. Counts and token estimates
-// are never negative, so only non-negative input is grouped.
+// group writes n with commas between digit groups. Counts are never negative,
+// so only non-negative input is grouped.
 func group(n int64) string {
 	s := strconv.FormatInt(n, 10)
 	if n < 0 || len(s) <= 3 {
@@ -156,19 +105,4 @@ func signedPercent(f float64) string {
 	}
 
 	return fmt.Sprintf("%.1f%%", f)
-}
-
-// duration renders seconds in the largest unit that keeps the number small,
-// because LOCOMO estimates span seconds for a file and days for a codebase.
-func duration(seconds float64) string {
-	switch {
-	case seconds < 60:
-		return fmt.Sprintf("%.0f s", seconds)
-	case seconds < 3600:
-		return fmt.Sprintf("%.1f min", seconds/60)
-	case seconds < 86400:
-		return fmt.Sprintf("%.1f h", seconds/3600)
-	default:
-		return fmt.Sprintf("%.1f days", seconds/86400)
-	}
 }
