@@ -82,10 +82,10 @@ tasks:
 # ---- running stuff ----
 
   run:
-    desc: Run the application (for development)
+    desc: 'Run codezor on this repository, writing codezor.md'
     silent: true
     cmds:
-      - go run ./cmd/...
+      - go run . {{.CLI_ARGS}}
 
 # ---- release ----
 
