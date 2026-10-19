@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -24,17 +25,22 @@ const (
 	cUntracked = "package c\n"
 )
 
-// newRepo builds a repository with a fixed identity and fixed line endings so
-// the fixtures count the same on every machine.
+// gitConfig pins identity, signing and line endings so the fixtures count the
+// same on every machine. It is passed per command rather than written with
+// `git config`, which would cost a process per setting.
+var gitConfig = []string{
+	"-c", "user.name=codezor test",
+	"-c", "user.email=codezor@example.invalid",
+	"-c", "commit.gpgsign=false",
+	"-c", "core.autocrlf=false",
+}
+
+// newRepo builds an empty repository on a main branch.
 func newRepo(t *testing.T) string {
 	t.Helper()
 
 	dir := t.TempDir()
 	git(t, dir, "init", "-b", "main")
-	git(t, dir, "config", "user.name", "codezor test")
-	git(t, dir, "config", "user.email", "codezor@example.invalid")
-	git(t, dir, "config", "commit.gpgsign", "false")
-	git(t, dir, "config", "core.autocrlf", "false")
 
 	return dir
 }
@@ -42,7 +48,7 @@ func newRepo(t *testing.T) string {
 func git(t *testing.T, dir string, args ...string) {
 	t.Helper()
 
-	cmd := exec.CommandContext(t.Context(), "git", args...)
+	cmd := exec.CommandContext(t.Context(), "git", slices.Concat(gitConfig, args)...) //nolint:gosec // test fixture: arguments are literals from this file
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	require.NoError(t, err, "git %s: %s", strings.Join(args, " "), out)
@@ -147,6 +153,23 @@ func TestCompareReportsDeletedCode(t *testing.T) {
 
 	require.Equal(t, analyze.Churn{Removed: 1}, got.Current)
 	require.Equal(t, int64(-1), got.TotalLOC.Delta())
+	require.Equal(t, got.TotalLOC.Delta(), got.Current.Net())
+}
+
+// scc leaves ignore files out of a directory walk, so the baseline side has to
+// leave them out too: otherwise an unchanged .gitignore reads as deleted code
+// and the LOC delta stops matching the churn.
+func TestCompareExcludesIgnoreFiles(t *testing.T) {
+	dir := newRepo(t)
+	write(t, dir, "a.go", aBaseline)
+	write(t, dir, ".gitignore", "bin/\n*.tmp\n")
+	commit(t, dir, "baseline")
+
+	got, err := analyze.Compare(t.Context(), dir, "main", "medium")
+	require.NoError(t, err)
+
+	require.Equal(t, []analyze.LanguageLOC{{Name: "Go", Baseline: 2, Current: 2}}, got.LOC)
+	require.Equal(t, analyze.Churn{Added: 2}, got.LatestCommit)
 	require.Equal(t, got.TotalLOC.Delta(), got.Current.Net())
 }
 

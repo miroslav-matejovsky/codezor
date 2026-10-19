@@ -63,7 +63,9 @@ Files scc does not recognise, and binary files, are left out of both sides.
 Churn comes from a zero context diff: each changed line is classified by scc on
 the side it belongs to, and only the code lines are counted. Added and removed
 are therefore comparable with the LOC table, and net churn equals the LOC
-delta.
+delta. The one case that breaks the equality is a tracked file that the current
+`.gitignore` covers: git still diffs it, while the walk over the working tree
+does not see it.
 
 Gross churn counts a rewritten line twice, once on each side, which makes it a
 measure of work done rather than of growth. The change footprint is gross churn
@@ -85,6 +87,10 @@ error instead of a silent fallback.
 
 The report carries no timestamp: an unchanged tree renders an unchanged
 `codezor.md`, so the file diffs cleanly between runs.
+
+`codezor.md` lives in the repository it measures, so it counts itself. Writing
+it is a change to the tree, and a run that alters the report's own line count
+settles on the run after it.
 
 ## Links
 

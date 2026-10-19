@@ -2,6 +2,7 @@ package analyze
 
 import (
 	"path"
+	"slices"
 	"sync"
 
 	"github.com/boyter/scc/v4/processor"
@@ -9,6 +10,12 @@ import (
 
 // shebangLookahead is how much of a file scc inspects to resolve a #! line.
 const shebangLookahead = 200
+
+// ignoreLanguages are the languages scc leaves out of a directory walk unless
+// it is asked for them: a .gitignore steers the walk, it is not code. The same
+// exclusion has to apply here, or an ignore file present on both sides would
+// read as deleted code.
+var ignoreLanguages = []string{"ignore", "gitignore"}
 
 // constants guards the one time load of scc's language database, which lives
 // in package level state and is needed before any file can be counted.
@@ -71,6 +78,11 @@ func classify(repoPath string, content []byte) (classified, bool) {
 	languages, extension := processor.DetectLanguage(repoPath)
 	if len(languages) == 0 {
 		return classified{}, false
+	}
+	for _, l := range languages {
+		if slices.Contains(ignoreLanguages, l) {
+			return classified{}, false
+		}
 	}
 	for _, l := range languages {
 		processor.LoadLanguageFeature(l)
