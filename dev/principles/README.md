@@ -22,14 +22,14 @@
 
 - **Architecturally aware** — Prefer information about the structural reach of a change over metric abundance. Touching multiple projects, modules, bounded contexts, dependencies, or public contracts can be more significant than raw LOC.
 
-- **Minimal** — Prefer a small set of decision-useful measurements over comprehensive static-analysis reporting. `stats.md` should provide situational awareness within seconds.
+- **Minimal** — Prefer a small set of decision-useful measurements over comprehensive static-analysis reporting. `codezor.md` should provide situational awareness within seconds.
 
-- **Diff-friendly** — Keep structure, ordering, formatting, and precision stable so changes to `stats.md` produce meaningful Git diffs.
+- **Diff-friendly** — Keep structure, ordering, formatting, and precision stable so changes to `codezor.md` produce meaningful Git diffs.
 
 - **Gracefully degradable** — Basic repository and Git statistics should remain available even when language-specific or complexity analyzers are unavailable.
 
 - **Human- and agent-readable** — Use simple Markdown, stable headings, explicit units, and predictable structure. Humans and development agents should consume the same representation.
 
-- **No history database** — Describe the repository as it exists now and its deviation from the baseline. Git remains the source of historical information; `stats.md` is not an analytics warehouse.
+- **No history database** — Describe the repository as it exists now and its deviation from the baseline. Git remains the source of historical information; `codezor.md` is not an analytics warehouse.
 
-- **Repository-centric** — `stats.md` describes the current repository. Developer assessment, code review, project management, historical analytics, and quality gates are separate concerns.
+- **Repository-centric** — `codezor.md` describes the current repository. Developer assessment, code review, project management, historical analytics, and quality gates are separate concerns.
