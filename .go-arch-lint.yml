@@ -23,15 +23,21 @@ vendors:
 components:
   main: { in: . }
   analyze: { in: internal/analyze }
+  gitrepo: { in: internal/gitrepo }
   report: { in: internal/report }
 
 deps:
   # main is the composition root: it wires the components together.
   main:
     mayDependOn: [analyze, report]
-  # analyze owns the only contact with scc.
+  # analyze owns the only contact with scc, and reads the repository through
+  # gitrepo rather than running git itself.
   analyze:
+    mayDependOn: [gitrepo]
     canUse: [scc]
+  # gitrepo has no entry on purpose: it talks to git through the standard
+  # library and may import no component and no vendor.
+  #
   # report renders what analyze produced and reaches nothing else.
   report:
     mayDependOn: [analyze]

@@ -1,8 +1,9 @@
-// Command codezor counts a source tree and estimates what producing that code
-// with an LLM would cost, then writes the result as markdown.
+// Command codezor measures the working tree of a git repository against the
+// branch it forked from, and writes the result as markdown.
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -12,28 +13,33 @@ import (
 	"github.com/miroslav-matejovsky/codezor/internal/report"
 )
 
+// baselineBranch is the branch every comparison is made against. The baseline
+// commit is the merge base with it, not its tip, so work pushed to it after
+// this branch started is not reported as part of this change.
+const baselineBranch = "main"
+
 func main() {
-	path := flag.String("path", ".", "directory to analyze")
+	path := flag.String("path", ".", "directory inside the repository to analyze")
 	out := flag.String("out", "codezor.md", "markdown report to write")
 	preset := flag.String("locomo-preset", "medium",
 		"LOCOMO model tier: "+strings.Join(analyze.Presets, ", "))
 	flag.Parse()
 
-	if err := run(*path, *out, *preset); err != nil {
+	if err := run(context.Background(), *path, *out, *preset); err != nil {
 		fmt.Fprintln(os.Stderr, "codezor:", err)
 		os.Exit(1)
 	}
 }
 
-// run analyzes the tree and writes the report, so main only handles flags and
+// run compares the tree and writes the report, so main only handles flags and
 // the exit code.
-func run(path, out, preset string) error {
-	a, err := analyze.Run(path, preset)
+func run(ctx context.Context, path, out, preset string) error {
+	comparison, err := analyze.Compare(ctx, path, baselineBranch, preset)
 	if err != nil {
 		return err
 	}
 
-	if err := os.WriteFile(out, []byte(report.Markdown(&a)), 0o600); err != nil {
+	if err := os.WriteFile(out, []byte(report.Markdown(&comparison)), 0o600); err != nil {
 		return fmt.Errorf("write %q: %w", out, err)
 	}
 

@@ -8,60 +8,112 @@ import (
 	"github.com/miroslav-matejovsky/codezor/internal/analyze"
 )
 
-// Markdown renders the analysis as the body of codezor.md.
-func Markdown(a *analyze.Analysis) string {
+// Markdown renders the comparison as the body of codezor.md.
+func Markdown(c *analyze.Comparison) string {
 	lines := []string{
-		"# codezor",
+		"# Code Statistics",
 		"",
-		fmt.Sprintf("Source counts for %#q, measured with [scc](https://github.com/boyter/scc).", a.Path),
-		"The report describes the working tree as it is on disk and carries no timestamp,",
-		"so an unchanged tree renders an unchanged report.",
+		fmt.Sprintf("Baseline: %#q (merge-base %s)", c.BaselineRef, c.BaselineHash),
+		"Current: working tree, including uncommitted and untracked files",
 		"",
-		"## Code",
+		"LOC is code lines as counted by [scc](https://github.com/boyter/scc):",
+		"comment and blank lines are left out of every number below, churn",
+		"included. The report carries no timestamp, so an unchanged tree renders",
+		"an unchanged report.",
 		"",
-		"| Language | Files | Lines | Code | Comments | Blanks | Complexity |",
-		"| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+		"## LOC",
+		"",
+		"| Language | Baseline | Current | Delta | Change |",
+		"| --- | ---: | ---: | ---: | ---: |",
 	}
 
-	for _, l := range a.Languages {
-		lines = append(lines, countsRow(l.Name, l.Counts))
+	for _, row := range c.LOC {
+		lines = append(lines, locRow(row.Name, row, false))
 	}
+
 	lines = append(lines,
-		countsRow("**Total**", a.Totals),
+		locRow("Total", c.TotalLOC, true),
+		"",
+		"## Current Change",
+		"",
+	)
+	lines = append(lines, churnLines(c.Current, c.TotalLOC.Baseline)...)
+
+	lines = append(lines,
+		"",
+		"## Latest Commit",
+		"",
+	)
+	lines = append(lines, churnLines(c.LatestCommit, 0)...)
+
+	lines = append(lines,
 		"",
 		"## LOCOMO",
 		"",
-		"LOCOMO (LLM Output COst MOdel) estimates what producing this code with an LLM",
-		"would cost. It scales with code volume and complexity, and leaves out context",
-		"reuse, test generation and debugging. It is a ballpark figure, as COCOMO is for",
-		"human development.",
+		"LOCOMO (LLM Output COst MOdel) estimates what producing the current",
+		"code with an LLM would cost. It scales with code volume and complexity,",
+		"and leaves out context reuse, test generation and debugging. It is a",
+		"ballpark figure, as COCOMO is for human development.",
 		"",
 		"| Estimate | Value |",
 		"| --- | ---: |",
-		fmt.Sprintf("| Model tier | %s |", a.Locomo.Preset),
-		fmt.Sprintf("| Input tokens | %s |", group(int64(a.Locomo.InputTokens))),
-		fmt.Sprintf("| Output tokens | %s |", group(int64(a.Locomo.OutputTokens))),
-		fmt.Sprintf("| Cost | $%.2f |", a.Locomo.Cost),
-		fmt.Sprintf("| Iteration factor | %.2f |", a.Locomo.IterationFactor),
-		fmt.Sprintf("| Generation time | %s |", duration(a.Locomo.GenerationSeconds)),
-		fmt.Sprintf("| Review time | %s |", duration(a.Locomo.ReviewHours*3600)),
+		fmt.Sprintf("| Model tier | %s |", c.Locomo.Preset),
+		fmt.Sprintf("| Input tokens | %s |", group(int64(c.Locomo.InputTokens))),
+		fmt.Sprintf("| Output tokens | %s |", group(int64(c.Locomo.OutputTokens))),
+		fmt.Sprintf("| Cost | $%.2f |", c.Locomo.Cost),
+		fmt.Sprintf("| Iteration factor | %.2f |", c.Locomo.IterationFactor),
+		fmt.Sprintf("| Generation time | %s |", duration(c.Locomo.GenerationSeconds)),
+		fmt.Sprintf("| Review time | %s |", duration(c.Locomo.ReviewHours*3600)),
 	)
 
 	return strings.Join(lines, "\n") + "\n"
 }
 
-// countsRow renders one row of the code table, label included verbatim so the
-// total row can carry markdown emphasis.
-func countsRow(label string, c analyze.Counts) string {
-	return fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s |",
+// locRow renders one row of the LOC table. The total row is emphasised, which
+// is why the label is passed separately from the counts.
+func locRow(label string, row analyze.LanguageLOC, emphasise bool) string {
+	cells := []string{
 		label,
-		group(c.Files),
-		group(c.Lines),
-		group(c.Code),
-		group(c.Comments),
-		group(c.Blanks),
-		group(c.Complexity),
-	)
+		group(row.Baseline),
+		group(row.Current),
+		signed(row.Delta()),
+		changeCell(row),
+	}
+
+	if emphasise {
+		for i, cell := range cells {
+			cells[i] = "**" + cell + "**"
+		}
+	}
+
+	return "| " + strings.Join(cells, " | ") + " |"
+}
+
+// changeCell renders the relative change, or n/a for a language the baseline
+// did not contain, where a percentage of zero would read as no change.
+func changeCell(row analyze.LanguageLOC) string {
+	if row.Baseline == 0 {
+		return "n/a"
+	}
+
+	return signedPercent(row.ChangePercent())
+}
+
+// churnLines renders one churn block. A baseline of zero leaves out the
+// footprint, which only means something relative to existing code.
+func churnLines(c analyze.Churn, baseline int64) []string {
+	lines := []string{
+		fmt.Sprintf("- Added LOC: %s", group(c.Added)),
+		fmt.Sprintf("- Removed LOC: %s", group(c.Removed)),
+		fmt.Sprintf("- Gross churn: %s LOC", group(c.Gross())),
+		fmt.Sprintf("- Net change: %s LOC", signed(c.Net())),
+	}
+
+	if baseline > 0 {
+		lines = append(lines, fmt.Sprintf("- Change footprint: %.1f%% of baseline LOC", c.Footprint(baseline)))
+	}
+
+	return lines
 }
 
 // group writes n with commas between digit groups. Counts and token estimates
@@ -81,6 +133,29 @@ func group(n int64) string {
 	}
 
 	return b.String()
+}
+
+// signed writes a delta with an explicit sign, so a column of deltas reads as
+// change rather than as a count.
+func signed(n int64) string {
+	switch {
+	case n > 0:
+		return "+" + group(n)
+	case n < 0:
+		return "-" + group(-n)
+	default:
+		return "0"
+	}
+}
+
+// signedPercent writes a relative change with one decimal and an explicit
+// sign.
+func signedPercent(f float64) string {
+	if f > 0 {
+		return fmt.Sprintf("+%.1f%%", f)
+	}
+
+	return fmt.Sprintf("%.1f%%", f)
 }
 
 // duration renders seconds in the largest unit that keeps the number small,
