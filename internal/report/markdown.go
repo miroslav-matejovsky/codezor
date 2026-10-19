@@ -8,36 +8,41 @@ import (
 	"github.com/miroslav-matejovsky/codezor/internal/analyze"
 )
 
+// locColumns is the shape of the LOC table. Counts are right aligned so the
+// digits line up under each other.
+var locColumns = []column{
+	{heading: "Language", alignment: alignLeft},
+	{heading: "Baseline", alignment: alignRight},
+	{heading: "Current", alignment: alignRight},
+	{heading: "Delta", alignment: alignRight},
+	{heading: "Change", alignment: alignRight},
+}
+
 // Markdown renders the comparison as the body of codezor.md.
 func Markdown(c *analyze.Comparison) string {
+	rows := make([][]string, 0, len(c.LOC)+1)
+	for _, row := range c.LOC {
+		rows = append(rows, locCells(row.Name, row, false))
+	}
+	rows = append(rows, locCells("Total", c.Total, true))
+
 	lines := []string{
 		"# Code Statistics",
 		"",
 		fmt.Sprintf("Baseline: %#q (merge-base %s)", c.BaselineRef, c.BaselineHash),
 		"Current: working tree, including uncommitted and untracked files",
 		"",
-		"LOC is code lines as counted by [scc](https://github.com/boyter/scc):",
-		"comment and blank lines are left out. The report carries no timestamp,",
-		"so an unchanged tree renders an unchanged report.",
-		"",
 		"## LOC",
 		"",
-		"| Language | Baseline | Current | Delta | Change |",
-		"| --- | ---: | ---: | ---: | ---: |",
 	}
-
-	for _, row := range c.LOC {
-		lines = append(lines, locRow(row.Name, row, false))
-	}
-
-	lines = append(lines, locRow("Total", c.Total, true))
+	lines = append(lines, renderTable(locColumns, rows)...)
 
 	return strings.Join(lines, "\n") + "\n"
 }
 
-// locRow renders one row of the LOC table. The total row is emphasised, which
-// is why the label is passed separately from the counts.
-func locRow(label string, row analyze.LanguageLOC, emphasise bool) string {
+// locCells is one row of the LOC table. The total row is emphasised, which is
+// why the label is passed separately from the counts.
+func locCells(label string, row analyze.LanguageLOC, emphasise bool) []string {
 	cells := []string{
 		label,
 		group(row.Baseline),
@@ -52,7 +57,7 @@ func locRow(label string, row analyze.LanguageLOC, emphasise bool) string {
 		}
 	}
 
-	return "| " + strings.Join(cells, " | ") + " |"
+	return cells
 }
 
 // changeCell renders the relative change, or n/a for a language the baseline
