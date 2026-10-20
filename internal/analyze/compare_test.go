@@ -94,6 +94,7 @@ func TestCompareCountsBothSides(t *testing.T) {
 
 	require.Equal(t, "main", got.BaselineRef)
 	require.NotEmpty(t, got.BaselineHash)
+	require.True(t, got.BaselineIsMergeBase)
 
 	require.Equal(t, []analyze.LanguageLOC{{Name: "Go", Baseline: 2, Current: 4}}, got.LOC)
 	require.Equal(t, analyze.LanguageLOC{Baseline: 2, Current: 4}, got.Total)
@@ -173,6 +174,44 @@ func TestCompareReportsNewLanguages(t *testing.T) {
 		{Name: "Markdown", Baseline: 0, Current: 2},
 	}, got.LOC)
 	require.Zero(t, got.LOC[1].ChangePercent())
+}
+
+// The baseline is the commit checked out, so the committed d.go counts on both
+// sides and only the uncommitted edit to a.go and the untracked c.go move the
+// numbers.
+func TestCompareHeadCountsUncommittedWorkOnly(t *testing.T) {
+	got, err := analyze.CompareHead(t.Context(), branchFixture(t))
+	require.NoError(t, err)
+
+	require.Equal(t, "HEAD", got.BaselineRef)
+	require.NotEmpty(t, got.BaselineHash)
+	require.False(t, got.BaselineIsMergeBase)
+
+	require.Equal(t, []analyze.LanguageLOC{{Name: "Go", Baseline: 3, Current: 4}}, got.LOC)
+	require.Equal(t, int64(1), got.Total.Delta())
+}
+
+// With nothing uncommitted the two sides match, whatever the branch holds over
+// the baseline branch.
+func TestCompareHeadCleanTreeHasNoDelta(t *testing.T) {
+	dir := branchFixture(t)
+	commit(t, dir, "everything committed")
+
+	got, err := analyze.CompareHead(t.Context(), dir)
+	require.NoError(t, err)
+
+	require.Equal(t, []analyze.LanguageLOC{{Name: "Go", Baseline: 4, Current: 4}}, got.LOC)
+	require.Zero(t, got.Total.Delta())
+}
+
+func TestCompareHeadRejectsNonRepository(t *testing.T) {
+	_, err := analyze.CompareHead(t.Context(), t.TempDir())
+	require.ErrorContains(t, err, "not a git repository")
+}
+
+func TestCompareHeadRejectsRepositoryWithoutCommits(t *testing.T) {
+	_, err := analyze.CompareHead(t.Context(), newRepo(t))
+	require.ErrorContains(t, err, "no commits")
 }
 
 func TestCompareRejectsNonRepository(t *testing.T) {

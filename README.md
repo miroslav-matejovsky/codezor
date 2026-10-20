@@ -1,29 +1,30 @@
 # codezor
 
 codezor counts the code in a git repository and compares the working tree
-against the branch it forked from. It runs locally, reads the tree as it is on
-disk, and writes a markdown report or prints a summary table.
+against a baseline: the branch it forked from for the written report, the
+current branch for the printed summary. It runs locally and reads the tree as
+it is on disk.
 
 ## Usage
 
 ```shell
 go run .                              # writes codezor.md for this repository
 go run . -path ../other -out out.md   # another repository, another report
-go run . -summary                     # prints the table, writes nothing
+go run . -summary                     # prints the uncommitted change, writes nothing
 ```
 
-| Flag       | Default      | Meaning                                              |
-| ---------- | ------------ | ---------------------------------------------------- |
-| `-path`    | `.`          | Directory inside the repository to analyze.          |
-| `-out`     | `codezor.md` | Markdown report to write.                            |
-| `-summary` | `false`      | Print the summary table to stdout and write nothing. |
+| Flag       | Default      | Meaning                                                 |
+| ---------- | ------------ | ------------------------------------------------------- |
+| `-path`    | `.`          | Directory inside the repository to analyze.             |
+| `-out`     | `codezor.md` | Markdown report to write.                               |
+| `-summary` | `false`      | Print the table for uncommitted work and write nothing. |
 
 `task run` does the same and accepts the flags after `--`. `task summary` runs
 `-summary` for this repository.
 
-`-summary` prints the same comparison the report carries: the baseline it was
-measured against and the LOC table, without markdown emphasis. It writes no
-file, so a look at the current change leaves the tree it measures untouched.
+`-summary` measures the working tree against `HEAD` instead of `main`, so the
+table shows the uncommitted and untracked work alone. It writes no file, so a
+look at the current change leaves the tree it measures untouched.
 
 ## Architecture
 
@@ -52,10 +53,14 @@ fixes.
 
 ### Baseline
 
-The baseline is the merge base between `main` and `HEAD`, not the tip of
-`main`. The delta is therefore what this branch changed: commits that landed on
-`main` after the branch started do not move the numbers. On `main` itself the
-baseline is `HEAD`, so the report shows uncommitted work alone.
+The report's baseline is the merge base between `main` and `HEAD`, not the tip
+of `main`. The delta is therefore what this branch changed: commits that landed
+on `main` after the branch started do not move the numbers. On `main` itself the
+merge base is `HEAD`, so the report shows uncommitted work alone.
+
+The summary's baseline is `HEAD`, the tip of the current branch. Whatever this
+branch has committed counts on both sides, so the delta is the uncommitted and
+untracked work alone: the change in the editor rather than the whole branch.
 
 The baseline side is the committed tree at that revision. The current side is
 the files on disk: tracked files, including staged and unstaged edits, plus

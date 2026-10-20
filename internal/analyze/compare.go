@@ -41,11 +41,19 @@ func (l LanguageLOC) ChangePercent() float64 {
 // Comparison is the working tree measured against a baseline revision. Total
 // carries no name; it is the sum of the LOC rows.
 type Comparison struct {
-	Root         string
-	BaselineRef  string
+	// Root is the work tree root everything was measured from.
+	Root string
+	// BaselineRef is the reference the baseline was derived from: a branch for
+	// Compare, HEAD for CompareHead.
+	BaselineRef string
+	// BaselineHash is the short hash of the baseline commit itself.
 	BaselineHash string
-	LOC          []LanguageLOC
-	Total        LanguageLOC
+	// BaselineIsMergeBase says whether BaselineHash is the merge base with
+	// BaselineRef rather than BaselineRef itself, which is what tells a reader
+	// whether committed work on this branch is part of the delta.
+	BaselineIsMergeBase bool
+	LOC                 []LanguageLOC
+	Total               LanguageLOC
 }
 
 // Compare counts the code lines in the repository holding dir, on both sides
@@ -53,27 +61,12 @@ type Comparison struct {
 //
 // The baseline is the merge base, not the tip of the branch, so commits that
 // landed on baselineRef after this branch started are not reported as part of
-// this change. The baseline side is the committed tree at that revision; the
-// current side is the files on disk, which includes uncommitted and untracked
-// code and excludes whatever .gitignore covers.
-//
-// Both sides are enumerated by git and counted by the same counter, so the two
-// columns are comparable by construction. Everything is measured from the work
-// tree root, so the report does not depend on which subdirectory codezor ran
-// in.
+// this change. The delta therefore covers everything this branch did: its
+// commits and its uncommitted work.
 func Compare(ctx context.Context, dir, baselineRef string) (Comparison, error) {
-	repo, err := gitrepo.Open(ctx, dir)
+	repo, root, _, err := openRepo(ctx, dir)
 	if err != nil {
 		return Comparison{}, err
-	}
-
-	root, err := repo.Root(ctx)
-	if err != nil {
-		return Comparison{}, err
-	}
-
-	if _, err := repo.Head(ctx); err != nil {
-		return Comparison{}, fmt.Errorf("repository at %q has no commits to compare against: %w", root, err)
 	}
 
 	base, err := repo.MergeBase(ctx, baselineRef)
@@ -81,6 +74,56 @@ func Compare(ctx context.Context, dir, baselineRef string) (Comparison, error) {
 		return Comparison{}, err
 	}
 
+	return compare(ctx, repo, root, baselineRef, base, true)
+}
+
+// CompareHead counts the code lines in the repository holding dir against the
+// commit currently checked out.
+//
+// The delta is the uncommitted and untracked work alone: whatever this branch
+// has committed counts on both sides. That is the question the inner loop asks,
+// where what matters is the change in the editor rather than the whole branch.
+func CompareHead(ctx context.Context, dir string) (Comparison, error) {
+	repo, root, head, err := openRepo(ctx, dir)
+	if err != nil {
+		return Comparison{}, err
+	}
+
+	return compare(ctx, repo, root, "HEAD", head, false)
+}
+
+// openRepo opens the repository holding dir and reports its work tree root and
+// the commit checked out. A repository without commits is rejected here: there
+// is no baseline to compare against.
+func openRepo(ctx context.Context, dir string) (repo *gitrepo.Repo, root, head string, err error) {
+	repo, err = gitrepo.Open(ctx, dir)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	root, err = repo.Root(ctx)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	head, err = repo.Head(ctx)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("repository at %q has no commits to compare against: %w", root, err)
+	}
+
+	return repo, root, head, nil
+}
+
+// compare counts both sides against base and builds the comparison. The
+// baseline side is the committed tree at base; the current side is the files on
+// disk, which includes uncommitted and untracked code and excludes whatever
+// .gitignore covers.
+//
+// Both sides are enumerated by git and counted by the same counter, so the two
+// columns are comparable by construction. Everything is measured from the work
+// tree root, so the result does not depend on which subdirectory codezor ran
+// in.
+func compare(ctx context.Context, repo *gitrepo.Repo, root, baselineRef, base string, isMergeBase bool) (Comparison, error) {
 	baseShort, err := repo.ShortHash(ctx, base)
 	if err != nil {
 		return Comparison{}, err
@@ -99,11 +142,12 @@ func Compare(ctx context.Context, dir, baselineRef string) (Comparison, error) {
 	loc, total := locTable(baseline, current)
 
 	return Comparison{
-		Root:         root,
-		BaselineRef:  baselineRef,
-		BaselineHash: baseShort,
-		LOC:          loc,
-		Total:        total,
+		Root:                root,
+		BaselineRef:         baselineRef,
+		BaselineHash:        baseShort,
+		BaselineIsMergeBase: isMergeBase,
+		LOC:                 loc,
+		Total:               total,
 	}, nil
 }
 

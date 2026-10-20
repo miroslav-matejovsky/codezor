@@ -1,6 +1,6 @@
-// Command codezor counts the code lines of a git repository against the
-// branch it forked from, and writes the result as markdown or prints it as a
-// summary table.
+// Command codezor counts the code lines of a git repository. The report it
+// writes compares the working tree against the branch it forked from; the
+// summary it prints compares the working tree against the current branch.
 package main
 
 import (
@@ -13,9 +13,9 @@ import (
 	"github.com/miroslav-matejovsky/codezor/internal/report"
 )
 
-// baselineBranch is the branch every comparison is made against. The baseline
-// commit is the merge base with it, not its tip, so work pushed to it after
-// this branch started is not reported as part of this change.
+// baselineBranch is the branch the written report is compared against. The
+// baseline commit is the merge base with it, not its tip, so work pushed to it
+// after this branch started is not reported as part of this change.
 const baselineBranch = "main"
 
 func main() {
@@ -30,21 +30,36 @@ func main() {
 	}
 }
 
-// run compares the tree and renders the comparison, so main only handles flags
-// and the exit code.
-//
-// With summary set the table goes to stdout and nothing is written, which keeps
-// a quick look at the current change out of the repository it measures.
+// run picks the rendering, so main only handles flags and the exit code.
 func run(ctx context.Context, path, out string, summary bool) error {
-	comparison, err := analyze.Compare(ctx, path, baselineBranch)
+	if summary {
+		return printSummary(ctx, path)
+	}
+
+	return writeReport(ctx, path, out)
+}
+
+// printSummary writes the table for the uncommitted and untracked work to
+// stdout. The baseline is the current branch and nothing is written to disk,
+// which keeps a look at the change in the editor out of the repository it
+// measures.
+func printSummary(ctx context.Context, path string) error {
+	comparison, err := analyze.CompareHead(ctx, path)
 	if err != nil {
 		return err
 	}
 
-	if summary {
-		fmt.Print(report.Summary(&comparison))
+	fmt.Print(report.Summary(&comparison))
 
-		return nil
+	return nil
+}
+
+// writeReport writes the markdown report for everything this branch changed
+// against baselineBranch.
+func writeReport(ctx context.Context, path, out string) error {
+	comparison, err := analyze.Compare(ctx, path, baselineBranch)
+	if err != nil {
+		return err
 	}
 
 	if err := os.WriteFile(out, []byte(report.Markdown(&comparison)), 0o600); err != nil {

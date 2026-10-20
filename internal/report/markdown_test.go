@@ -11,9 +11,10 @@ import (
 
 func fixture() *analyze.Comparison {
 	return &analyze.Comparison{
-		Root:         "/repo",
-		BaselineRef:  "main",
-		BaselineHash: "a1b2c3d",
+		Root:                "/repo",
+		BaselineRef:         "main",
+		BaselineHash:        "a1b2c3d",
+		BaselineIsMergeBase: true,
 		LOC: []analyze.LanguageLOC{
 			{Name: "Go", Baseline: 38420, Current: 39601},
 			{Name: "PowerShell", Baseline: 1204, Current: 1261},

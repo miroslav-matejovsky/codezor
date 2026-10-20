@@ -16,6 +16,16 @@ func TestSummaryNamesTheBaseline(t *testing.T) {
 	require.Contains(t, s, "Current: working tree, including uncommitted and untracked files")
 }
 
+// Measured against the commit checked out there is no merge base to name, only
+// the baseline commit itself.
+func TestSummaryNamesTheHeadBaseline(t *testing.T) {
+	c := fixture()
+	c.BaselineRef = "HEAD"
+	c.BaselineIsMergeBase = false
+
+	require.Contains(t, report.Summary(c), "Baseline: HEAD (a1b2c3d)")
+}
+
 // The console table carries no markdown emphasis, so the total row sets no
 // column width of its own and the numbers still line up in a terminal.
 func TestSummaryAlignsTheLOCTable(t *testing.T) {

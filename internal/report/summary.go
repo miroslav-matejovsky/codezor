@@ -1,7 +1,6 @@
 package report
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/miroslav-matejovsky/codezor/internal/analyze"
@@ -11,11 +10,12 @@ import (
 // against and the LOC table, with no markdown emphasis, so the columns line up
 // as printed.
 //
-// It is the same comparison the markdown report carries, written for a reader
-// who wants the numbers in the shell rather than in a file.
+// The baseline is whatever the comparison was built against, which the first
+// line names: the summary does not assume the branch comparison the markdown
+// report uses.
 func Summary(c *analyze.Comparison) string {
 	lines := []string{
-		fmt.Sprintf("Baseline: %s (merge-base %s)", c.BaselineRef, c.BaselineHash),
+		baselineLine(c.BaselineRef, c),
 		currentLine,
 		"",
 	}

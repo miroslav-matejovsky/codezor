@@ -13,6 +13,20 @@ import (
 // numbers.
 const currentLine = "Current: working tree, including uncommitted and untracked files"
 
+// baselineLine names the revision the current column is measured against. The
+// merge base is called out as such, because there the delta covers the commits
+// of this branch too and not only the work on disk.
+//
+// ref is already formatted, so markdown can quote it and the console does not
+// have to.
+func baselineLine(ref string, c *analyze.Comparison) string {
+	if c.BaselineIsMergeBase {
+		return fmt.Sprintf("Baseline: %s (merge-base %s)", ref, c.BaselineHash)
+	}
+
+	return fmt.Sprintf("Baseline: %s (%s)", ref, c.BaselineHash)
+}
+
 // locColumns is the shape of the LOC table. Counts are right aligned so the
 // digits line up under each other.
 var locColumns = []column{

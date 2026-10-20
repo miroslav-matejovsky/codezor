@@ -12,7 +12,7 @@ func Markdown(c *analyze.Comparison) string {
 	lines := []string{
 		"# Code Statistics",
 		"",
-		fmt.Sprintf("Baseline: %#q (merge-base %s)", c.BaselineRef, c.BaselineHash),
+		baselineLine(fmt.Sprintf("%#q", c.BaselineRef), c),
 		currentLine,
 		"",
 		"## LOC",
