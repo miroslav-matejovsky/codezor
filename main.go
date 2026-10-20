@@ -1,5 +1,6 @@
 // Command codezor counts the code lines of a git repository against the
-// branch it forked from, and writes the result as markdown.
+// branch it forked from, and writes the result as markdown or prints it as a
+// summary table.
 package main
 
 import (
@@ -20,20 +21,30 @@ const baselineBranch = "main"
 func main() {
 	path := flag.String("path", ".", "directory inside the repository to analyze")
 	out := flag.String("out", "codezor.md", "markdown report to write")
+	summary := flag.Bool("summary", false, "print the summary table to stdout and write no report")
 	flag.Parse()
 
-	if err := run(context.Background(), *path, *out); err != nil {
+	if err := run(context.Background(), *path, *out, *summary); err != nil {
 		fmt.Fprintln(os.Stderr, "codezor:", err)
 		os.Exit(1)
 	}
 }
 
-// run compares the tree and writes the report, so main only handles flags and
-// the exit code.
-func run(ctx context.Context, path, out string) error {
+// run compares the tree and renders the comparison, so main only handles flags
+// and the exit code.
+//
+// With summary set the table goes to stdout and nothing is written, which keeps
+// a quick look at the current change out of the repository it measures.
+func run(ctx context.Context, path, out string, summary bool) error {
 	comparison, err := analyze.Compare(ctx, path, baselineBranch)
 	if err != nil {
 		return err
+	}
+
+	if summary {
+		fmt.Print(report.Summary(&comparison))
+
+		return nil
 	}
 
 	if err := os.WriteFile(out, []byte(report.Markdown(&comparison)), 0o600); err != nil {

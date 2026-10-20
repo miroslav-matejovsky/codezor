@@ -2,21 +2,28 @@
 
 codezor counts the code in a git repository and compares the working tree
 against the branch it forked from. It runs locally, reads the tree as it is on
-disk, and writes a markdown report.
+disk, and writes a markdown report or prints a summary table.
 
 ## Usage
 
 ```shell
 go run .                              # writes codezor.md for this repository
 go run . -path ../other -out out.md   # another repository, another report
+go run . -summary                     # prints the table, writes nothing
 ```
 
-| Flag    | Default      | Meaning                                     |
-| ------- | ------------ | ------------------------------------------- |
-| `-path` | `.`          | Directory inside the repository to analyze. |
-| `-out`  | `codezor.md` | Markdown report to write.                   |
+| Flag       | Default      | Meaning                                              |
+| ---------- | ------------ | ---------------------------------------------------- |
+| `-path`    | `.`          | Directory inside the repository to analyze.          |
+| `-out`     | `codezor.md` | Markdown report to write.                            |
+| `-summary` | `false`      | Print the summary table to stdout and write nothing. |
 
-`task run` does the same and accepts the flags after `--`.
+`task run` does the same and accepts the flags after `--`. `task summary` runs
+`-summary` for this repository.
+
+`-summary` prints the same comparison the report carries: the baseline it was
+measured against and the LOC table, without markdown emphasis. It writes no
+file, so a look at the current change leaves the tree it measures untouched.
 
 ## Architecture
 
@@ -25,7 +32,7 @@ go run . -path ../other -out out.md   # another repository, another report
 | `main.go`           | Entry point: flags, wiring, exit code.                      |
 | `internal/analyze/` | Counts both sides and builds the comparison.                |
 | `internal/gitrepo/` | Reads the repository: baseline revision, trees, file lists. |
-| `internal/report/`  | Renders a comparison as markdown.                           |
+| `internal/report/`  | Renders a comparison as markdown or as a console summary.   |
 | `dev/`              | Working records: principles, studies, plans, bugs, backlog.  |
 | `taskfile/`         | PowerShell scripts behind the `Taskfile.yml` targets.       |
 
