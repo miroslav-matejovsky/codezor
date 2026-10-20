@@ -1,16 +1,33 @@
 # codezor
 
-codezor counts the code in a git repository and compares the working tree
-against a baseline: the branch it forked from for the written report, the
-current branch for the printed summary. It runs locally and reads the tree as
-it is on disk.
+codezor counts the code in a git repository and shows how big the current
+change is. It runs locally, reads the working tree as it is on disk, and needs
+no service, no account, and no counting tool installed.
+
+Two views of the same numbers:
+
+- a markdown report of everything the current branch changed against `main`
+- a console summary of the uncommitted and untracked work alone
+
+## Install
+
+```shell
+go install github.com/miroslav-matejovsky/codezor@latest   # newest release
+go install github.com/miroslav-matejovsky/codezor@v0.1.0   # a pinned release
+```
+
+Releases are semver git tags, so `@vX.Y.Z` pins an exact build and `@latest`
+takes the newest tag. Building needs Go 1.27.2 or newer; running needs `git` on
+`PATH` and nothing else.
 
 ## Usage
 
+Run it anywhere inside the repository you want to measure.
+
 ```shell
-go run .                              # writes codezor.md for this repository
-go run . -path ../other -out out.md   # another repository, another report
-go run . -summary                     # prints the uncommitted change, writes nothing
+codezor                              # writes codezor.md for this repository
+codezor -summary                     # prints the uncommitted change, writes nothing
+codezor -path ../other -out out.md   # another repository, another report
 ```
 
 | Flag       | Default      | Meaning                                                 |
@@ -19,75 +36,62 @@ go run . -summary                     # prints the uncommitted change, writes no
 | `-out`     | `codezor.md` | Markdown report to write.                               |
 | `-summary` | `false`      | Print the table for uncommitted work and write nothing. |
 
-`task run` does the same and accepts the flags after `--`. `task summary` runs
-`-summary` for this repository.
+Exit status is zero on success, one on failure, with the reason on stderr.
 
-`-summary` measures the working tree against `HEAD` instead of `main`, so the
-table shows the uncommitted and untracked work alone. It writes no file, so a
-look at the current change leaves the tree it measures untouched.
+## Output
 
-## Architecture
+`-summary` writes nothing to disk, so it is the view for the inner loop:
 
-| Path                | Responsibility                                              |
-| ------------------- | ----------------------------------------------------------- |
-| `main.go`           | Entry point: flags, wiring, exit code.                      |
-| `internal/analyze/` | Counts both sides and builds the comparison.                |
-| `internal/gitrepo/` | Reads the repository: baseline revision, trees, file lists. |
-| `internal/report/`  | Renders a comparison as markdown or as a console summary.   |
-| `dev/`              | Working records: principles, studies, plans, bugs, backlog.  |
-| `taskfile/`         | PowerShell scripts behind the `Taskfile.yml` targets.       |
+```text
+Baseline: HEAD (9d320a8)
+Current: working tree, including uncommitted and untracked files
 
-Counting comes from [scc](https://github.com/boyter/scc), used as a library so
-codezor needs no counting tool installed. `internal/analyze` is the only
-package that touches scc; `internal/report` sees only codezor's own types.
-`internal/gitrepo` runs the `git` command line and nothing else, so git is the
-one external tool required, which a tool that measures a branch against another
-already implies.
+| Language   | Baseline | Current | Delta | Change |
+| ---------- | -------: | ------: | ----: | -----: |
+| Go         |      894 |     962 |   +68 |  +7.6% |
+| Markdown   |      321 |     325 |    +4 |  +1.2% |
+| YAML       |      221 |     221 |     0 |   0.0% |
+| License    |      216 |     216 |     0 |   0.0% |
+| JSON       |      113 |     113 |     0 |   0.0% |
+| Powershell |      111 |     111 |     0 |   0.0% |
+| Total      |    1,876 |   1,948 |   +72 |  +3.8% |
+```
 
-scc is pinned to `v3`. `v4` adds git history reports that pull in `go-git` and
-its ssh and crypto tail, which triples the dependency tree for features
-codezor does not use. The tradeoff is that `v3` no longer receives upstream
-fixes.
+Without `-summary` the same table goes to `codezor.md`, under a heading, with
+the baseline named and the total emphasised. The file carries no timestamp, so
+an unchanged tree rewrites the same bytes and the report diffs cleanly between
+runs.
 
-## Measurements
+## Reading the table
 
-### Baseline
+| Column     | Meaning                                                      |
+| ---------- | ------------------------------------------------------------ |
+| `Language` | Language of the counted files, plus a `Total` row.           |
+| `Baseline` | Code lines in the committed baseline tree.                   |
+| `Current`  | Code lines in the working tree as it is on disk.             |
+| `Delta`    | `Current` minus `Baseline`.                                  |
+| `Change`   | `Delta` relative to `Baseline`, or `n/a` for a new language. |
 
-The report's baseline is the merge base between `main` and `HEAD`, not the tip
-of `main`. The delta is therefore what this branch changed: commits that landed
-on `main` after the branch started do not move the numbers. On `main` itself the
-merge base is `HEAD`, so the report shows uncommitted work alone.
+The baseline depends on the view. The report compares against the merge base
+between `main` and `HEAD`, so the delta is everything this branch changed,
+committed or not. `-summary` compares against `HEAD`, so committed work counts
+on both sides and the delta is only what is still uncommitted.
 
-The summary's baseline is `HEAD`, the tip of the current branch. Whatever this
-branch has committed counts on both sides, so the delta is the uncommitted and
-untracked work alone: the change in the editor rather than the whole branch.
+The current side is the files on disk: tracked files, with staged and unstaged
+edits, plus untracked ones, and nothing `.gitignore` covers. LOC is code lines:
+comments and blank lines are excluded, and so are binaries, files of no
+recognised language, and ignore files such as `.gitignore`.
 
-The baseline side is the committed tree at that revision. The current side is
-the files on disk: tracked files, including staged and unstaged edits, plus
-untracked ones, and nothing `.gitignore` covers.
+`docs/measurements.md` gives the precise definitions.
 
-Both sides are enumerated by git and counted by the same counter, so the two
-columns are comparable by construction.
+## Documentation
 
-### LOC
+| Document                                     | Contents                                               |
+| -------------------------------------------- | ------------------------------------------------------ |
+| [docs/measurements.md](docs/measurements.md) | What each number means, exactly.                       |
+| [docs/architecture.md](docs/architecture.md) | Packages, their boundaries, and the counter behind it. |
+| [docs/development.md](docs/development.md)   | Building, checks, tests, and cutting a release.        |
 
-LOC is code lines as scc counts them. Comment and blank lines are excluded.
-Three kinds of file are counted on neither side: binaries, files whose language
-scc does not recognise, and ignore files such as `.gitignore`, which steer a
-walk rather than hold code.
+## License
 
-A language the baseline did not contain shows `n/a` for its relative change,
-since a percentage of a zero baseline would read as no change.
-
-### Determinism
-
-The report carries no timestamp: an unchanged tree renders an unchanged
-`codezor.md`, so the file diffs cleanly between runs.
-
-`codezor.md` lives in the repository it measures, so it counts itself. Writing
-it is a change to the tree, and a run that alters the report's own line count
-settles on the run after it.
-
-## Links
-
-- <https://github.com/boyter/scc>
+EUPL-1.2. See [LICENSE](LICENSE).
