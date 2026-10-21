@@ -24,6 +24,9 @@ Both sides are enumerated by git and counted by the same counter, so the two
 columns are comparable by construction. Everything is measured from the work
 tree root, so the result does not depend on which subdirectory codezor ran in.
 
+Neither rendering names the baseline it used, so which of the two applies
+follows from how codezor was run.
+
 A repository without commits has no baseline, and a run there fails rather than
 reporting the working tree against nothing.
 

@@ -9,21 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSummaryNamesTheBaseline(t *testing.T) {
+// The summary is the tables and their labels, with nothing else: the prose
+// that described the two sides lives in the documentation.
+func TestSummaryStartsWithTheLOCTable(t *testing.T) {
 	s := report.Summary(fixture())
 
-	require.Contains(t, s, "Baseline: main (merge-base a1b2c3d)")
-	require.Contains(t, s, "Current: working tree, including uncommitted and untracked files")
-}
-
-// Measured against the commit checked out there is no merge base to name, only
-// the baseline commit itself.
-func TestSummaryNamesTheHeadBaseline(t *testing.T) {
-	c := fixture()
-	c.BaselineRef = "HEAD"
-	c.BaselineIsMergeBase = false
-
-	require.Contains(t, report.Summary(c), "Baseline: HEAD (a1b2c3d)")
+	require.True(t, strings.HasPrefix(s, "LOC\n\n|"), s)
+	require.NotContains(t, s, "Baseline:")
+	require.NotContains(t, s, "working tree")
 }
 
 // The console table carries no markdown emphasis, so the total row sets no
@@ -50,9 +43,6 @@ func TestSummaryAlignsTheLOCTable(t *testing.T) {
 func TestSummaryAlignsTheComplexityTable(t *testing.T) {
 	want := strings.Join([]string{
 		"Complexity",
-		"",
-		"Branching keywords and operators as scc counts them, not a cyclomatic",
-		"complexity. Languages with none on either side are left out.",
 		"",
 		"| Language   | Baseline | Current | Delta | Change |",
 		"| ---------- | -------: | ------: | ----: | -----: |",
@@ -86,7 +76,7 @@ func TestSummaryHandlesEmptyRepository(t *testing.T) {
 		"| Total    |        0 |       0 |     0 |    n/a |",
 	}, "\n")
 
-	s := report.Summary(&analyze.Comparison{BaselineRef: "main", BaselineHash: "0000000"})
+	s := report.Summary(&analyze.Comparison{})
 
 	require.Contains(t, s, want)
 }

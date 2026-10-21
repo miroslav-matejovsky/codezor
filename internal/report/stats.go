@@ -8,33 +8,6 @@ import (
 	"github.com/miroslav-matejovsky/codezor/internal/analyze"
 )
 
-// currentLine describes what the current column holds. Both renderings state
-// it, so a reader of either one knows uncommitted and untracked code is in the
-// numbers.
-const currentLine = "Current: working tree, including uncommitted and untracked files"
-
-// complexityLines say what the complexity numbers are, so a reader does not
-// take them for a measured cyclomatic complexity, and account for the rows the
-// table has fewer of than the LOC table above it.
-var complexityLines = []string{
-	"Branching keywords and operators as scc counts them, not a cyclomatic",
-	"complexity. Languages with none on either side are left out.",
-}
-
-// baselineLine names the revision the current column is measured against. The
-// merge base is called out as such, because there the delta covers the commits
-// of this branch too and not only the work on disk.
-//
-// ref is already formatted, so markdown can quote it and the console does not
-// have to.
-func baselineLine(ref string, c *analyze.Comparison) string {
-	if c.BaselineIsMergeBase {
-		return fmt.Sprintf("Baseline: %s (merge-base %s)", ref, c.BaselineHash)
-	}
-
-	return fmt.Sprintf("Baseline: %s (%s)", ref, c.BaselineHash)
-}
-
 // metricColumns is the shape of a metric table. Counts are right aligned so
 // the digits line up under each other.
 var metricColumns = []column{

@@ -44,37 +44,32 @@ Exit status is zero on success, one on failure, with the reason on stderr.
 `-summary` writes nothing to disk, so it is the view for the inner loop:
 
 ```text
-Baseline: HEAD (55696eb)
-Current: working tree, including uncommitted and untracked files
-
 LOC
 
 | Language   | Baseline | Current | Delta | Change |
 | ---------- | -------: | ------: | ----: | -----: |
-| Go         |    1,059 |   1,076 |   +17 |  +1.6% |
-| Markdown   |      511 |     515 |    +4 |  +0.8% |
+| Go         |    1,076 |   1,041 |   -35 |  -3.3% |
+| Markdown   |      509 |     504 |    -5 |  -1.0% |
 | YAML       |      221 |     221 |     0 |   0.0% |
 | License    |      216 |     216 |     0 |   0.0% |
 | JSON       |      113 |     113 |     0 |   0.0% |
 | Powershell |      111 |     111 |     0 |   0.0% |
-| Total      |    2,231 |   2,252 |   +21 |  +0.9% |
+| Total      |    2,246 |   2,206 |   -40 |  -1.8% |
 
 Complexity
 
-Branching keywords and operators as scc counts them, not a cyclomatic
-complexity. Languages with none on either side are left out.
-
 | Language   | Baseline | Current | Delta | Change |
 | ---------- | -------: | ------: | ----: | -----: |
-| Go         |      123 |     127 |    +4 |  +3.3% |
+| Go         |      127 |     126 |    -1 |  -0.8% |
 | Powershell |       20 |      20 |     0 |   0.0% |
-| Total      |      143 |     147 |    +4 |  +2.8% |
+| Total      |      147 |     146 |    -1 |  -0.7% |
 ```
 
 Without `-summary` the same two tables go to `codezor.md`, under markdown
-headings, with the baseline named and the totals emphasised. The file carries no
-timestamp, so an unchanged tree rewrites the same bytes and the report diffs
-cleanly between runs.
+headings and with the totals emphasised. Neither view explains itself: the
+numbers are defined here and in `docs/measurements.md`, not repeated in every
+report. The file carries no timestamp, so an unchanged tree rewrites the same
+bytes and the report diffs cleanly between runs.
 
 ## Reading the tables
 

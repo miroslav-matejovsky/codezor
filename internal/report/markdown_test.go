@@ -21,10 +21,7 @@ func language(name string, codeBaseline, codeCurrent, complexityBaseline, comple
 
 func fixture() *analyze.Comparison {
 	return &analyze.Comparison{
-		Root:                "/repo",
-		BaselineRef:         "main",
-		BaselineHash:        "a1b2c3d",
-		BaselineIsMergeBase: true,
+		Root: "/repo",
 		Languages: []analyze.LanguageStats{
 			language("Go", 38420, 39601, 4201, 4388),
 			language("PowerShell", 1204, 1261, 96, 96),
@@ -35,11 +32,14 @@ func fixture() *analyze.Comparison {
 	}
 }
 
-func TestMarkdownNamesTheBaseline(t *testing.T) {
+// The report is a title and the tables, with nothing between them: the prose
+// that described the two sides lives in the documentation.
+func TestMarkdownStartsWithTheTitle(t *testing.T) {
 	md := report.Markdown(fixture())
 
-	require.Contains(t, md, "# Code Statistics")
-	require.Contains(t, md, "Baseline: `main` (merge-base a1b2c3d)")
+	require.True(t, strings.HasPrefix(md, "# Code Statistics\n\n## LOC\n\n|"), md)
+	require.NotContains(t, md, "merge-base")
+	require.NotContains(t, md, "working tree")
 }
 
 // Every column is padded to its widest cell, so the table lines up in the file
@@ -66,9 +66,6 @@ func TestMarkdownAlignsTheLOCTable(t *testing.T) {
 func TestMarkdownAlignsTheComplexityTable(t *testing.T) {
 	want := strings.Join([]string{
 		"## Complexity",
-		"",
-		"Branching keywords and operators as scc counts them, not a cyclomatic",
-		"complexity. Languages with none on either side are left out.",
 		"",
 		"| Language   |  Baseline |   Current |    Delta |    Change |",
 		"| ---------- | --------: | --------: | -------: | --------: |",
@@ -117,7 +114,7 @@ func TestMarkdownHandlesEmptyRepository(t *testing.T) {
 		"| **Total** |    **0** |   **0** | **0** | **n/a** |",
 	}, "\n")
 
-	md := report.Markdown(&analyze.Comparison{BaselineRef: "main", BaselineHash: "0000000"})
+	md := report.Markdown(&analyze.Comparison{})
 
 	require.Contains(t, md, want)
 }
