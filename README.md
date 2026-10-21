@@ -1,8 +1,9 @@
 # codezor
 
 codezor counts the code in a git repository and shows how big the current
-change is. It runs locally, reads the working tree as it is on disk, and needs
-no service, no account, and no counting tool installed.
+change is, in lines and in complexity. It runs locally, reads the working tree
+as it is on disk, and needs no service, no account, and no counting tool
+installed.
 
 Two views of the same numbers:
 
@@ -17,7 +18,7 @@ go install github.com/miroslav-matejovsky/codezor@v0.1.0   # a pinned release
 ```
 
 Releases are semver git tags, so `@vX.Y.Z` pins an exact build and `@latest`
-takes the newest tag. Building needs Go 1.27.2 or newer; running needs `git` on
+takes the newest tag. Building needs Go 1.27.3 or newer; running needs `git` on
 `PATH` and nothing else.
 
 ## Usage
@@ -43,34 +44,53 @@ Exit status is zero on success, one on failure, with the reason on stderr.
 `-summary` writes nothing to disk, so it is the view for the inner loop:
 
 ```text
-Baseline: HEAD (9d320a8)
+Baseline: HEAD (fa1da37)
 Current: working tree, including uncommitted and untracked files
+
+LOC
 
 | Language   | Baseline | Current | Delta | Change |
 | ---------- | -------: | ------: | ----: | -----: |
-| Go         |      894 |     962 |   +68 |  +7.6% |
-| Markdown   |      321 |     325 |    +4 |  +1.2% |
+| Go         |      962 |   1,059 |   +97 | +10.1% |
+| Markdown   |      463 |     511 |   +48 | +10.4% |
 | YAML       |      221 |     221 |     0 |   0.0% |
 | License    |      216 |     216 |     0 |   0.0% |
 | JSON       |      113 |     113 |     0 |   0.0% |
 | Powershell |      111 |     111 |     0 |   0.0% |
-| Total      |    1,876 |   1,948 |   +72 |  +3.8% |
+| Total      |    2,086 |   2,231 |  +145 |  +7.0% |
+
+Complexity
+
+Branching keywords and operators as scc counts them, not a cyclomatic complexity.
+
+| Language   | Baseline | Current | Delta | Change |
+| ---------- | -------: | ------: | ----: | -----: |
+| Go         |      123 |     123 |     0 |   0.0% |
+| Markdown   |        0 |       0 |     0 |    n/a |
+| YAML       |        0 |       0 |     0 |    n/a |
+| License    |        0 |       0 |     0 |    n/a |
+| JSON       |        0 |       0 |     0 |    n/a |
+| Powershell |       20 |      20 |     0 |   0.0% |
+| Total      |      143 |     143 |     0 |   0.0% |
 ```
 
-Without `-summary` the same table goes to `codezor.md`, under a heading, with
-the baseline named and the total emphasised. The file carries no timestamp, so
-an unchanged tree rewrites the same bytes and the report diffs cleanly between
-runs.
+Without `-summary` the same two tables go to `codezor.md`, under markdown
+headings, with the baseline named and the totals emphasised. The file carries no
+timestamp, so an unchanged tree rewrites the same bytes and the report diffs
+cleanly between runs.
 
-## Reading the table
+## Reading the tables
+
+Both tables have the same columns over the same rows, so they read against each
+other line by line.
 
 | Column     | Meaning                                                      |
 | ---------- | ------------------------------------------------------------ |
 | `Language` | Language of the counted files, plus a `Total` row.           |
-| `Baseline` | Code lines in the committed baseline tree.                   |
-| `Current`  | Code lines in the working tree as it is on disk.             |
+| `Baseline` | The count in the committed baseline tree.                    |
+| `Current`  | The count in the working tree as it is on disk.              |
 | `Delta`    | `Current` minus `Baseline`.                                  |
-| `Change`   | `Delta` relative to `Baseline`, or `n/a` for a new language. |
+| `Change`   | `Delta` relative to `Baseline`, or `n/a` for a zero baseline. |
 
 The baseline depends on the view. The report compares against the merge base
 between `main` and `HEAD`, so the delta is everything this branch changed,
@@ -82,6 +102,11 @@ edits, plus untracked ones, and nothing `.gitignore` covers. LOC is code lines:
 comments and blank lines are excluded, and so are binaries, files of no
 recognised language, and ignore files such as `.gitignore`.
 
+Complexity is scc's estimate over those same files: a count of the branching
+keywords and operators its language database lists. It says how hard the code
+is to follow, not how correct it is, and the keyword lists differ per language,
+so read a language against its own baseline.
+
 `docs/measurements.md` gives the precise definitions.
 
 ## Documentation
@@ -89,7 +114,7 @@ recognised language, and ignore files such as `.gitignore`.
 | Document                                     | Contents                                               |
 | -------------------------------------------- | ------------------------------------------------------ |
 | [docs/measurements.md](docs/measurements.md) | What each number means, exactly.                       |
-| [docs/architecture.md](docs/architecture.md) | Packages, their boundaries, and the counter behind it. |
+| [docs/architecture.md](docs/architecture.md) | Packages, their boundaries, and the counter behind them. |
 | [docs/development.md](docs/development.md)   | Building, checks, tests, and cutting a release.        |
 
 ## License

@@ -9,19 +9,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// language is one row of the fixture, with the four numbers in the order the
+// tables print them.
+func language(name string, codeBaseline, codeCurrent, complexityBaseline, complexityCurrent int64) analyze.LanguageStats {
+	return analyze.LanguageStats{
+		Name:       name,
+		Code:       analyze.Metric{Baseline: codeBaseline, Current: codeCurrent},
+		Complexity: analyze.Metric{Baseline: complexityBaseline, Current: complexityCurrent},
+	}
+}
+
 func fixture() *analyze.Comparison {
 	return &analyze.Comparison{
 		Root:                "/repo",
 		BaselineRef:         "main",
 		BaselineHash:        "a1b2c3d",
 		BaselineIsMergeBase: true,
-		LOC: []analyze.LanguageLOC{
-			{Name: "Go", Baseline: 38420, Current: 39601},
-			{Name: "PowerShell", Baseline: 1204, Current: 1261},
-			{Name: "Markdown", Baseline: 0, Current: 120},
-			{Name: "YAML", Baseline: 842, Current: 766},
+		Languages: []analyze.LanguageStats{
+			language("Go", 38420, 39601, 4201, 4388),
+			language("PowerShell", 1204, 1261, 96, 96),
+			language("Markdown", 0, 120, 0, 0),
+			language("YAML", 842, 766, 31, 28),
 		},
-		Total: analyze.LanguageLOC{Baseline: 40466, Current: 41748},
+		Total: language("", 40466, 41748, 4328, 4512),
 	}
 }
 
@@ -36,6 +46,8 @@ func TestMarkdownNamesTheBaseline(t *testing.T) {
 // and not only once a renderer has been through it.
 func TestMarkdownAlignsTheLOCTable(t *testing.T) {
 	want := strings.Join([]string{
+		"## LOC",
+		"",
 		"| Language   |   Baseline |    Current |      Delta |    Change |",
 		"| ---------- | ---------: | ---------: | ---------: | --------: |",
 		"| Go         |     38,420 |     39,601 |     +1,181 |     +3.1% |",
@@ -43,6 +55,26 @@ func TestMarkdownAlignsTheLOCTable(t *testing.T) {
 		"| Markdown   |          0 |        120 |       +120 |       n/a |",
 		"| YAML       |        842 |        766 |        -76 |     -9.0% |",
 		"| **Total**  | **40,466** | **41,748** | **+1,282** | **+3.2%** |",
+	}, "\n")
+
+	require.Contains(t, report.Markdown(fixture()), want)
+}
+
+// Complexity is a section of its own, built from the same rows in the same
+// order, so the two tables read against each other line by line.
+func TestMarkdownAlignsTheComplexityTable(t *testing.T) {
+	want := strings.Join([]string{
+		"## Complexity",
+		"",
+		"Branching keywords and operators as scc counts them, not a cyclomatic complexity.",
+		"",
+		"| Language   |  Baseline |   Current |    Delta |    Change |",
+		"| ---------- | --------: | --------: | -------: | --------: |",
+		"| Go         |     4,201 |     4,388 |     +187 |     +4.5% |",
+		"| PowerShell |        96 |        96 |        0 |      0.0% |",
+		"| Markdown   |         0 |         0 |        0 |       n/a |",
+		"| YAML       |        31 |        28 |       -3 |     -9.7% |",
+		"| **Total**  | **4,328** | **4,512** | **+184** | **+4.3%** |",
 	}, "\n")
 
 	require.Contains(t, report.Markdown(fixture()), want)

@@ -30,6 +30,8 @@ func TestSummaryNamesTheHeadBaseline(t *testing.T) {
 // column width of its own and the numbers still line up in a terminal.
 func TestSummaryAlignsTheLOCTable(t *testing.T) {
 	want := strings.Join([]string{
+		"LOC",
+		"",
 		"| Language   | Baseline | Current |  Delta | Change |",
 		"| ---------- | -------: | ------: | -----: | -----: |",
 		"| Go         |   38,420 |  39,601 | +1,181 |  +3.1% |",
@@ -37,6 +39,26 @@ func TestSummaryAlignsTheLOCTable(t *testing.T) {
 		"| Markdown   |        0 |     120 |   +120 |    n/a |",
 		"| YAML       |      842 |     766 |    -76 |  -9.0% |",
 		"| Total      |   40,466 |  41,748 | +1,282 |  +3.2% |",
+	}, "\n")
+
+	require.Contains(t, report.Summary(fixture()), want)
+}
+
+// The console shows complexity under its own label, with the columns sized
+// independently of the LOC table above it.
+func TestSummaryAlignsTheComplexityTable(t *testing.T) {
+	want := strings.Join([]string{
+		"Complexity",
+		"",
+		"Branching keywords and operators as scc counts them, not a cyclomatic complexity.",
+		"",
+		"| Language   | Baseline | Current | Delta | Change |",
+		"| ---------- | -------: | ------: | ----: | -----: |",
+		"| Go         |    4,201 |   4,388 |  +187 |  +4.5% |",
+		"| PowerShell |       96 |      96 |     0 |   0.0% |",
+		"| Markdown   |        0 |       0 |     0 |    n/a |",
+		"| YAML       |       31 |      28 |    -3 |  -9.7% |",
+		"| Total      |    4,328 |   4,512 |  +184 |  +4.3% |",
 	}, "\n")
 
 	require.Contains(t, report.Summary(fixture()), want)

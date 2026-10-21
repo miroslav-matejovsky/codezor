@@ -1,7 +1,9 @@
 # Measurements
 
 Every number codezor prints or writes comes from one comparison: a committed
-baseline tree against the working tree. This document defines both sides.
+baseline tree against the working tree. Two quantities are reported over the
+same files, LOC and complexity. This document defines both sides and both
+quantities.
 
 ## Baseline
 
@@ -38,6 +40,25 @@ only still gets a row, with zero on the other.
 
 A language the baseline did not contain shows `n/a` for its relative change,
 since a percentage of a zero baseline would read as no change.
+
+## Complexity
+
+Complexity is scc's complexity estimate: a count of the branching keywords and
+operators its language database lists for the language, summed over exactly the
+files LOC counts. In Go an `if` and a `for` each add one, so a function holding
+both scores two.
+
+It is an indicator of how hard the code is to follow, not a measured cyclomatic
+complexity. The keyword lists differ per language, so read a language against
+its own baseline rather than against another language.
+
+Rows and ordering are the LOC table's, so the two tables read against each
+other line by line. A language appears in both, in the same place, even when
+its complexity is zero on both sides, which is what a language of plain prose
+or data looks like.
+
+A zero baseline shows `n/a` for the relative change, for the same reason LOC
+does.
 
 ## Determinism
 

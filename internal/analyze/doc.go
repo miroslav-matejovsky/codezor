@@ -1,5 +1,6 @@
-// Package analyze counts the code lines in a repository on both sides of a
-// baseline revision.
+// Package analyze measures a repository on both sides of a baseline revision.
+// Two quantities are counted per language: code lines and scc's complexity
+// estimate.
 //
 // Two baselines are offered, and they answer different questions. Compare uses
 // the merge base with a branch, so the delta is everything the current branch

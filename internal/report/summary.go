@@ -7,8 +7,8 @@ import (
 )
 
 // Summary renders the comparison for a terminal: the baseline it was measured
-// against and the LOC table, with no markdown emphasis, so the columns line up
-// as printed.
+// against, then the LOC and complexity tables, with no markdown emphasis, so
+// the columns line up as printed.
 //
 // The baseline is whatever the comparison was built against, which the first
 // line names: the summary does not assume the branch comparison the markdown
@@ -18,8 +18,12 @@ func Summary(c *analyze.Comparison) string {
 		baselineLine(c.BaselineRef, c),
 		currentLine,
 		"",
+		"LOC",
+		"",
 	}
-	lines = append(lines, renderTable(locColumns, locRows(c, false))...)
+	lines = append(lines, metricTable(c, code, false)...)
+	lines = append(lines, "", "Complexity", "", complexityLine, "")
+	lines = append(lines, metricTable(c, complexity, false)...)
 
 	return strings.Join(lines, "\n") + "\n"
 }

@@ -32,13 +32,16 @@ package that touches scc. `internal/gitrepo` runs the `git` command line and
 nothing else, so git is the one external tool required, which a tool that
 measures a branch against another already implies.
 
+Two numbers come out of each file: code lines and scc's complexity estimate, a
+count of the branching keywords and operators in scc's language database.
+
 scc keeps its language database in package level state, so the counter is
 guarded by a one time load and the comparisons must not be run concurrently.
 
-scc is pinned to `v3`. `v4` adds git history reports that pull in `go-git` and
-its ssh and crypto tail, which triples the dependency tree for features
-codezor does not use. The tradeoff is that `v3` no longer receives upstream
-fixes.
+scc is pinned to `v4`. It adds git history reports that pull in `go-git` and
+its ssh and crypto tail, which roughly doubles the indirect dependency list for
+features codezor does not use. The cost is accepted because `v3`, which needed
+none of it, no longer receives upstream fixes.
 
 ## Reading the tree
 

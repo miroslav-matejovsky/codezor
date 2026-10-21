@@ -13,6 +13,10 @@ import (
 // numbers.
 const currentLine = "Current: working tree, including uncommitted and untracked files"
 
+// complexityLine says what the complexity numbers are, so a reader does not
+// take them for a measured cyclomatic complexity.
+const complexityLine = "Branching keywords and operators as scc counts them, not a cyclomatic complexity."
+
 // baselineLine names the revision the current column is measured against. The
 // merge base is called out as such, because there the delta covers the commits
 // of this branch too and not only the work on disk.
@@ -27,9 +31,9 @@ func baselineLine(ref string, c *analyze.Comparison) string {
 	return fmt.Sprintf("Baseline: %s (%s)", ref, c.BaselineHash)
 }
 
-// locColumns is the shape of the LOC table. Counts are right aligned so the
-// digits line up under each other.
-var locColumns = []column{
+// metricColumns is the shape of a metric table. Counts are right aligned so
+// the digits line up under each other.
+var metricColumns = []column{
 	{heading: "Language", alignment: alignLeft},
 	{heading: "Baseline", alignment: alignRight},
 	{heading: "Current", alignment: alignRight},
@@ -37,27 +41,34 @@ var locColumns = []column{
 	{heading: "Change", alignment: alignRight},
 }
 
-// locRows is the body of the LOC table: one row per language, ordered as the
-// comparison ordered them, and the total last. emphasiseTotal wraps the total
-// row in markdown emphasis, which only the markdown rendering wants.
-func locRows(c *analyze.Comparison, emphasiseTotal bool) [][]string {
-	rows := make([][]string, 0, len(c.LOC)+1)
-	for _, row := range c.LOC {
-		rows = append(rows, locCells(row.Name, row, false))
-	}
+// code and complexity select which measurement a table renders. Both tables
+// have the same shape, so one renderer serves them with the metric passed in.
+func code(l analyze.LanguageStats) analyze.Metric { return l.Code }
 
-	return append(rows, locCells("Total", c.Total, emphasiseTotal))
+func complexity(l analyze.LanguageStats) analyze.Metric { return l.Complexity }
+
+// metricTable renders one metric as a table: a row per language, ordered as
+// the comparison ordered them, and the total last. emphasiseTotal wraps the
+// total row in markdown emphasis, which only the markdown rendering wants.
+func metricTable(c *analyze.Comparison, pick func(analyze.LanguageStats) analyze.Metric, emphasiseTotal bool) []string {
+	rows := make([][]string, 0, len(c.Languages)+1)
+	for _, language := range c.Languages {
+		rows = append(rows, metricCells(language.Name, pick(language), false))
+	}
+	rows = append(rows, metricCells("Total", pick(c.Total), emphasiseTotal))
+
+	return renderTable(metricColumns, rows)
 }
 
-// locCells is one row of the LOC table. The total row is emphasised, which is
-// why the label is passed separately from the counts.
-func locCells(label string, row analyze.LanguageLOC, emphasise bool) []string {
+// metricCells is one row of a metric table. The total row is emphasised, which
+// is why the label is passed separately from the counts.
+func metricCells(label string, m analyze.Metric, emphasise bool) []string {
 	cells := []string{
 		label,
-		group(row.Baseline),
-		group(row.Current),
-		signed(row.Delta()),
-		changeCell(row),
+		group(m.Baseline),
+		group(m.Current),
+		signed(m.Delta()),
+		changeCell(m),
 	}
 
 	if emphasise {
@@ -69,14 +80,14 @@ func locCells(label string, row analyze.LanguageLOC, emphasise bool) []string {
 	return cells
 }
 
-// changeCell renders the relative change, or n/a for a language the baseline
-// did not contain, where a percentage of zero would read as no change.
-func changeCell(row analyze.LanguageLOC) string {
-	if row.Baseline == 0 {
+// changeCell renders the relative change, or n/a for a zero baseline, where a
+// percentage of zero would read as no change.
+func changeCell(m analyze.Metric) string {
+	if m.Baseline == 0 {
 		return "n/a"
 	}
 
-	return signedPercent(row.ChangePercent())
+	return signedPercent(m.ChangePercent())
 }
 
 // group writes n with commas between digit groups. Counts are never negative,

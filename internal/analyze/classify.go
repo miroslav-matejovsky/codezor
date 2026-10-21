@@ -5,7 +5,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/boyter/scc/v3/processor"
+	"github.com/boyter/scc/v4/processor"
 )
 
 // shebangLookahead is how much of a file scc inspects to resolve a #! line.
@@ -28,6 +28,10 @@ func ensureConstants() {
 type classified struct {
 	language string
 	code     int64
+	// complexity is scc's complexity estimate: a count of the branching
+	// keywords and operators its language database lists, so it is comparable
+	// across languages only as an order of magnitude.
+	complexity int64
 }
 
 // classify counts content as if it were the file at repoPath, which is what
@@ -64,7 +68,7 @@ func classify(repoPath string, content []byte) (classified, bool) {
 
 	job.Language = processor.DetermineLanguage(filename, job.Language, job.PossibleLanguages, job.Content)
 	if job.Language == processor.SheBang {
-		language, err := processor.DetectSheBang(string(content[:min(len(content), shebangLookahead)]))
+		language, err := processor.DetectSheBang(content[:min(len(content), shebangLookahead)])
 		if err != nil {
 			return classified{}, false
 		}
@@ -78,5 +82,5 @@ func classify(repoPath string, content []byte) (classified, bool) {
 		return classified{}, false
 	}
 
-	return classified{language: job.Language, code: job.Code}, true
+	return classified{language: job.Language, code: job.Code, complexity: job.Complexity}, true
 }

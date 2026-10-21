@@ -18,7 +18,9 @@ func Markdown(c *analyze.Comparison) string {
 		"## LOC",
 		"",
 	}
-	lines = append(lines, renderTable(locColumns, locRows(c, true))...)
+	lines = append(lines, metricTable(c, code, true)...)
+	lines = append(lines, "", "## Complexity", "", complexityLine, "")
+	lines = append(lines, metricTable(c, complexity, true)...)
 
 	return strings.Join(lines, "\n") + "\n"
 }
