@@ -55,14 +55,26 @@ It is an indicator of how hard the code is to follow, not a measured cyclomatic
 complexity. The keyword lists differ per language, so read a language against
 its own baseline rather than against another language.
 
-Ordering is the LOC table's. A language whose complexity is zero on both sides
-is left out, because its row would be a line of zeroes and an `n/a`: that is
-what a language of plain prose or data looks like. It still counts toward the
-`Total`, and it keeps its LOC row, so the two tables can hold a different
-number of rows.
+Ordering is the LOC table's. A zero baseline shows `n/a` for the relative
+change, for the same reason LOC does.
 
-A zero baseline shows `n/a` for the relative change, for the same reason LOC
-does.
+The report gives complexity a table of its own, and leaves out a language whose
+complexity is zero on both sides: its row would be a line of zeroes and an
+`n/a`, which is what a language of plain prose or data looks like. It still
+counts toward the `Total`, and it keeps its LOC row, so the two tables can hold
+a different number of rows.
+
+## Renderings
+
+The report writes a table per metric. The summary writes one, with both metrics
+in every cell: the complexity, then the LOC in parentheses. Both numbers are
+padded down the column, the parenthesised ones among themselves, so a column
+reads as two columns of digits. The numbers are the same either way; one row
+per language is what fits a terminal.
+
+The summary leaves out only a language that is zero on both sides of both
+metrics, so a language of prose keeps its row there and shows its LOC against a
+complexity of zero.
 
 ## Determinism
 

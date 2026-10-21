@@ -1,25 +1,27 @@
 # Architecture
 
-codezor is a single command over three internal packages: one reads git, one
-counts, one renders.
+codezor is a single command over four internal packages: one reads git, one
+counts, one renders, one lays out tables.
 
-| Path                | Responsibility                                              |
-| ------------------- | ----------------------------------------------------------- |
-| `main.go`           | Entry point: flags, wiring, exit code.                      |
-| `internal/analyze/` | Counts both sides and builds the comparison.                |
-| `internal/gitrepo/` | Reads the repository: baseline revision, trees, file lists. |
-| `internal/report/`  | Renders a comparison as markdown or as a console summary.   |
-| `docs/`             | Technical documentation.                                    |
-| `dev/`              | Working records: principles, studies, plans, bugs, backlog. |
-| `taskfile/`         | PowerShell scripts behind the `Taskfile.yml` targets.       |
+| Path                 | Responsibility                                              |
+| -------------------- | ----------------------------------------------------------- |
+| `main.go`            | Entry point: flags, wiring, exit code.                      |
+| `internal/analyze/`  | Counts both sides and builds the comparison.                |
+| `internal/gitrepo/`  | Reads the repository: baseline revision, trees, file lists. |
+| `internal/report/`   | Renders a comparison as markdown or as a console summary.   |
+| `internal/markdown/` | Lays out markdown tables: column widths and padding.        |
+| `docs/`              | Technical documentation.                                    |
+| `dev/`               | Working records: principles, studies, plans, bugs, backlog. |
+| `taskfile/`          | PowerShell scripts behind the `Taskfile.yml` targets.       |
 
 ## Dependencies
 
 `main` wires `analyze` and `report` together and owns the choice between the
 two comparisons. `analyze` reads the repository through `gitrepo` rather than
-running git itself. `report` sees only codezor's own types. `gitrepo` imports
-no component and no third-party package: it talks to the `git` command line
-through the standard library.
+running git itself. `report` sees only codezor's own types, and hands its cells
+to `markdown` to lay out. `gitrepo` and `markdown` import no component and no
+third-party package: one talks to the `git` command line through the standard
+library, the other works on strings.
 
 The rules are declared in `.go-arch-lint.yml` and checked by `task arch-lint`,
 so a new import that crosses a boundary fails the build rather than drifting in.

@@ -24,6 +24,7 @@ components:
   main: { in: . }
   analyze: { in: internal/analyze }
   gitrepo: { in: internal/gitrepo }
+  markdown: { in: internal/markdown }
   report: { in: internal/report }
 
 deps:
@@ -38,6 +39,10 @@ deps:
   # gitrepo has no entry on purpose: it talks to git through the standard
   # library and may import no component and no vendor.
   #
-  # report renders what analyze produced and reaches nothing else.
+  # markdown has no entry on purpose: it lays out tables out of strings and may
+  # import no component and no vendor.
+  #
+  # report renders what analyze produced, through markdown, and reaches nothing
+  # else.
   report:
-    mayDependOn: [analyze]
+    mayDependOn: [analyze, markdown]
