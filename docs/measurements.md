@@ -52,10 +52,11 @@ It is an indicator of how hard the code is to follow, not a measured cyclomatic
 complexity. The keyword lists differ per language, so read a language against
 its own baseline rather than against another language.
 
-Rows and ordering are the LOC table's, so the two tables read against each
-other line by line. A language appears in both, in the same place, even when
-its complexity is zero on both sides, which is what a language of plain prose
-or data looks like.
+Ordering is the LOC table's. A language whose complexity is zero on both sides
+is left out, because its row would be a line of zeroes and an `n/a`: that is
+what a language of plain prose or data looks like. It still counts toward the
+`Total`, and it keeps its LOC row, so the two tables can hold a different
+number of rows.
 
 A zero baseline shows `n/a` for the relative change, for the same reason LOC
 does.

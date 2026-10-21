@@ -45,18 +45,19 @@ func TestSummaryAlignsTheLOCTable(t *testing.T) {
 }
 
 // The console shows complexity under its own label, with the columns sized
-// independently of the LOC table above it.
+// independently of the LOC table above it and the branchless languages left
+// out.
 func TestSummaryAlignsTheComplexityTable(t *testing.T) {
 	want := strings.Join([]string{
 		"Complexity",
 		"",
-		"Branching keywords and operators as scc counts them, not a cyclomatic complexity.",
+		"Branching keywords and operators as scc counts them, not a cyclomatic",
+		"complexity. Languages with none on either side are left out.",
 		"",
 		"| Language   | Baseline | Current | Delta | Change |",
 		"| ---------- | -------: | ------: | ----: | -----: |",
 		"| Go         |    4,201 |   4,388 |  +187 |  +4.5% |",
 		"| PowerShell |       96 |      96 |     0 |   0.0% |",
-		"| Markdown   |        0 |       0 |     0 |    n/a |",
 		"| YAML       |       31 |      28 |    -3 |  -9.7% |",
 		"| Total      |    4,328 |   4,512 |  +184 |  +4.3% |",
 	}, "\n")

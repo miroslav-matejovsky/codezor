@@ -13,9 +13,13 @@ import (
 // numbers.
 const currentLine = "Current: working tree, including uncommitted and untracked files"
 
-// complexityLine says what the complexity numbers are, so a reader does not
-// take them for a measured cyclomatic complexity.
-const complexityLine = "Branching keywords and operators as scc counts them, not a cyclomatic complexity."
+// complexityLines say what the complexity numbers are, so a reader does not
+// take them for a measured cyclomatic complexity, and account for the rows the
+// table has fewer of than the LOC table above it.
+var complexityLines = []string{
+	"Branching keywords and operators as scc counts them, not a cyclomatic",
+	"complexity. Languages with none on either side are left out.",
+}
 
 // baselineLine names the revision the current column is measured against. The
 // merge base is called out as such, because there the delta covers the commits
@@ -50,10 +54,20 @@ func complexity(l analyze.LanguageStats) analyze.Metric { return l.Complexity }
 // metricTable renders one metric as a table: a row per language, ordered as
 // the comparison ordered them, and the total last. emphasiseTotal wraps the
 // total row in markdown emphasis, which only the markdown rendering wants.
+//
+// A language the metric is zero on both sides of carries no information and is
+// left out, which is what keeps the languages of prose and data out of the
+// complexity table. The total still counts them, and the total row is kept
+// whatever it holds: it is what tells a reader the table is a table.
 func metricTable(c *analyze.Comparison, pick func(analyze.LanguageStats) analyze.Metric, emphasiseTotal bool) []string {
 	rows := make([][]string, 0, len(c.Languages)+1)
 	for _, language := range c.Languages {
-		rows = append(rows, metricCells(language.Name, pick(language), false))
+		metric := pick(language)
+		if metric.Baseline == 0 && metric.Current == 0 {
+			continue
+		}
+
+		rows = append(rows, metricCells(language.Name, metric, false))
 	}
 	rows = append(rows, metricCells("Total", pick(c.Total), emphasiseTotal))
 

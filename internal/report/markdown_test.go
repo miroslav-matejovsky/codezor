@@ -60,24 +60,35 @@ func TestMarkdownAlignsTheLOCTable(t *testing.T) {
 	require.Contains(t, report.Markdown(fixture()), want)
 }
 
-// Complexity is a section of its own, built from the same rows in the same
-// order, so the two tables read against each other line by line.
+// Complexity is a section of its own, ordered as the LOC table is ordered, and
+// without the Markdown row: a language with no branches on either side would
+// be a line of zeroes and an n/a.
 func TestMarkdownAlignsTheComplexityTable(t *testing.T) {
 	want := strings.Join([]string{
 		"## Complexity",
 		"",
-		"Branching keywords and operators as scc counts them, not a cyclomatic complexity.",
+		"Branching keywords and operators as scc counts them, not a cyclomatic",
+		"complexity. Languages with none on either side are left out.",
 		"",
 		"| Language   |  Baseline |   Current |    Delta |    Change |",
 		"| ---------- | --------: | --------: | -------: | --------: |",
 		"| Go         |     4,201 |     4,388 |     +187 |     +4.5% |",
 		"| PowerShell |        96 |        96 |        0 |      0.0% |",
-		"| Markdown   |         0 |         0 |        0 |       n/a |",
 		"| YAML       |        31 |        28 |       -3 |     -9.7% |",
 		"| **Total**  | **4,328** | **4,512** | **+184** | **+4.3%** |",
 	}, "\n")
 
 	require.Contains(t, report.Markdown(fixture()), want)
+}
+
+// A language left out of the complexity table is still counted in its total,
+// and still has its LOC row: it is the row that is noise, not the language.
+func TestMarkdownKeepsLanguagesWithoutComplexityInLOC(t *testing.T) {
+	md := report.Markdown(fixture())
+
+	require.Contains(t, md, "| Markdown   |          0 |        120 |       +120 |       n/a |")
+	require.Equal(t, 1, strings.Count(md, "| Markdown "))
+	require.Contains(t, md, "| **Total**  | **4,328** | **4,512** | **+184** | **+4.3%** |")
 }
 
 // No line may carry trailing whitespace, which editors and formatters strip

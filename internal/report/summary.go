@@ -22,7 +22,9 @@ func Summary(c *analyze.Comparison) string {
 		"",
 	}
 	lines = append(lines, metricTable(c, code, false)...)
-	lines = append(lines, "", "Complexity", "", complexityLine, "")
+	lines = append(lines, "", "Complexity", "")
+	lines = append(lines, complexityLines...)
+	lines = append(lines, "")
 	lines = append(lines, metricTable(c, complexity, false)...)
 
 	return strings.Join(lines, "\n") + "\n"

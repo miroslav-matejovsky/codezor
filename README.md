@@ -44,34 +44,31 @@ Exit status is zero on success, one on failure, with the reason on stderr.
 `-summary` writes nothing to disk, so it is the view for the inner loop:
 
 ```text
-Baseline: HEAD (fa1da37)
+Baseline: HEAD (55696eb)
 Current: working tree, including uncommitted and untracked files
 
 LOC
 
 | Language   | Baseline | Current | Delta | Change |
 | ---------- | -------: | ------: | ----: | -----: |
-| Go         |      962 |   1,059 |   +97 | +10.1% |
-| Markdown   |      463 |     511 |   +48 | +10.4% |
+| Go         |    1,059 |   1,076 |   +17 |  +1.6% |
+| Markdown   |      511 |     515 |    +4 |  +0.8% |
 | YAML       |      221 |     221 |     0 |   0.0% |
 | License    |      216 |     216 |     0 |   0.0% |
 | JSON       |      113 |     113 |     0 |   0.0% |
 | Powershell |      111 |     111 |     0 |   0.0% |
-| Total      |    2,086 |   2,231 |  +145 |  +7.0% |
+| Total      |    2,231 |   2,252 |   +21 |  +0.9% |
 
 Complexity
 
-Branching keywords and operators as scc counts them, not a cyclomatic complexity.
+Branching keywords and operators as scc counts them, not a cyclomatic
+complexity. Languages with none on either side are left out.
 
 | Language   | Baseline | Current | Delta | Change |
 | ---------- | -------: | ------: | ----: | -----: |
-| Go         |      123 |     123 |     0 |   0.0% |
-| Markdown   |        0 |       0 |     0 |    n/a |
-| YAML       |        0 |       0 |     0 |    n/a |
-| License    |        0 |       0 |     0 |    n/a |
-| JSON       |        0 |       0 |     0 |    n/a |
+| Go         |      123 |     127 |    +4 |  +3.3% |
 | Powershell |       20 |      20 |     0 |   0.0% |
-| Total      |      143 |     143 |     0 |   0.0% |
+| Total      |      143 |     147 |    +4 |  +2.8% |
 ```
 
 Without `-summary` the same two tables go to `codezor.md`, under markdown
@@ -81,8 +78,9 @@ cleanly between runs.
 
 ## Reading the tables
 
-Both tables have the same columns over the same rows, so they read against each
-other line by line.
+Both tables have the same columns and the same ordering. The complexity table
+leaves out any language with no branches on either side, so it is usually the
+shorter of the two.
 
 | Column     | Meaning                                                      |
 | ---------- | ------------------------------------------------------------ |
@@ -105,7 +103,9 @@ recognised language, and ignore files such as `.gitignore`.
 Complexity is scc's estimate over those same files: a count of the branching
 keywords and operators its language database lists. It says how hard the code
 is to follow, not how correct it is, and the keyword lists differ per language,
-so read a language against its own baseline.
+so read a language against its own baseline. A language with no branches on
+either side still counts toward the complexity `Total`; only its row is left
+out.
 
 `docs/measurements.md` gives the precise definitions.
 
