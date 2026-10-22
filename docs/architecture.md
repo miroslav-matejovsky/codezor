@@ -16,8 +16,10 @@ counts, one renders, one lays out tables.
 
 ## Dependencies
 
-`main` wires `analyze` and `report` together and owns the choice between the
-two comparisons. `analyze` reads the repository through `gitrepo` rather than
+`main` wires `analyze` and `report` together. The report uses the merge base with
+main; the summary combines that comparison with a comparison against HEAD.
+The summary runs the comparisons sequentially and joins their rows by language.
+`analyze` reads the repository through `gitrepo` rather than
 running git itself. `report` sees only codezor's own types, and hands its cells
 to `markdown` to lay out. `gitrepo` and `markdown` import no component and no
 third-party package: one talks to the `git` command line through the standard

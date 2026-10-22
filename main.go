@@ -1,6 +1,6 @@
 // Command codezor counts the code lines of a git repository. The report it
 // writes compares the working tree against the branch it forked from; the
-// summary it prints compares the working tree against the current branch.
+// summary compares it against both HEAD and the merge base with main.
 package main
 
 import (
@@ -13,7 +13,7 @@ import (
 	"github.com/miroslav-matejovsky/codezor/internal/report"
 )
 
-// baselineBranch is the branch the written report is compared against. The
+// baselineBranch is the branch the report and summary compare against. The
 // baseline commit is the merge base with it, not its tip, so work pushed to it
 // after this branch started is not reported as part of this change.
 const baselineBranch = "main"
@@ -39,17 +39,20 @@ func run(ctx context.Context, path, out string, summary bool) error {
 	return writeReport(ctx, path, out)
 }
 
-// printSummary writes the table for the uncommitted and untracked work to
-// stdout. The baseline is the current branch and nothing is written to disk,
-// which keeps a look at the change in the editor out of the repository it
-// measures.
+// printSummary writes changes against HEAD and the merge base with main to
+// stdout, including uncommitted and untracked work in both comparisons.
 func printSummary(ctx context.Context, path string) error {
 	comparison, err := analyze.CompareHead(ctx, path)
 	if err != nil {
 		return err
 	}
 
-	fmt.Print(report.Summary(&comparison))
+	mainComparison, err := analyze.Compare(ctx, path, baselineBranch)
+	if err != nil {
+		return err
+	}
+
+	fmt.Print(report.Summary(&comparison, &mainComparison))
 
 	return nil
 }

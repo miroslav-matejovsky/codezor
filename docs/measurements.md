@@ -1,6 +1,6 @@
 # Measurements
 
-Every number codezor prints or writes comes from one comparison: a committed
+Every number codezor prints or writes comes from a comparison: a committed
 baseline tree against the working tree. Two quantities are reported over the
 same files, LOC and complexity. This document defines both sides and both
 quantities.
@@ -12,9 +12,11 @@ of `main`. The delta is therefore what this branch changed: commits that landed
 on `main` after the branch started do not move the numbers. On `main` itself the
 merge base is `HEAD`, so the report shows uncommitted work alone.
 
-The summary's baseline is `HEAD`, the tip of the current branch. Whatever this
-branch has committed counts on both sides, so the delta is the uncommitted and
-untracked work alone: the change in the editor rather than the whole branch.
+The summary uses two baselines. Delta and Change use `HEAD`, the tip of the
+current branch, so they measure uncommitted and untracked work alone.
+Delta (main) and Change (main) use the same merge base with `main` as the report,
+so they include committed, uncommitted and untracked work. The summary requires
+a local `main` branch with a common ancestor with HEAD.
 
 The baseline side is the committed tree at that revision. The current side is
 the files on disk: tracked files, including staged and unstaged edits, plus
@@ -24,8 +26,8 @@ Both sides are enumerated by git and counted by the same counter, so the two
 columns are comparable by construction. Everything is measured from the work
 tree root, so the result does not depend on which subdirectory codezor ran in.
 
-Neither rendering names the baseline it used, so which of the two applies
-follows from how codezor was run.
+The summary names the main comparison in its column headings; the report uses
+the merge base with main throughout.
 
 A repository without commits has no baseline, and a run there fails rather than
 reporting the working tree against nothing.
@@ -38,8 +40,8 @@ scc does not recognise, and ignore files such as `.gitignore`, which steer a
 walk rather than hold code.
 
 Rows are ordered by current size, so the largest languages read first, and the
-`Total` row is the sum of the rows above it. A language present on one side
-only still gets a row, with zero on the other.
+`Total` row includes all languages, even those hidden by the summary's
+complexity filter. A language present on one side only has zero on the other.
 
 A language the baseline did not contain shows `n/a` for its relative change,
 since a percentage of a zero baseline would read as no change.
@@ -66,15 +68,21 @@ a different number of rows.
 
 ## Renderings
 
-The report writes a table per metric. The summary writes one, with both metrics
-in every cell: the complexity, then the LOC beside it. Both numbers are padded
+The report writes a table per metric with Baseline, Current, Delta and Change.
+The summary shows Language, Delta, Change, Delta (main) and Change (main) in one
+table, with both metrics in each numeric cell: complexity, then LOC beside it.
+Both numbers are padded
 down the column, the LOC ones among themselves, so a column reads as two columns
 of digits. The numbers are the same either way; one row
 per language is what fits a terminal.
 
-The summary leaves out only a language that is zero on both sides of both
-metrics, so a language of prose keeps its row there and shows its LOC against a
-complexity of zero.
+The summary joins comparisons by language name, keeping languages with
+complexity in HEAD, main's baseline or the working tree. Languages absent from
+one comparison have zero counts there and `n/a` for percentage changes. Rows
+present only in main's baseline have zero current LOC and appear last, before
+the total. The summary leaves out languages with zero complexity throughout. Totals
+include all languages for both metrics. The `Complexity (LOC)` label appears
+directly below the table, with no blank line between them.
 
 ## Determinism
 

@@ -9,7 +9,7 @@ import (
 	"github.com/miroslav-matejovsky/codezor/internal/markdown"
 )
 
-// metricColumns is the shape of every table here. Counts are right aligned so
+// metricColumns is the shape of each report table. Counts are right aligned so
 // the digits line up under each other.
 var metricColumns = []markdown.Column{
 	{Heading: "Language", Alignment: markdown.AlignLeft},
@@ -48,62 +48,82 @@ func metricTable(c *analyze.Comparison, pick func(analyze.LanguageStats) analyze
 	return markdown.Table(metricColumns, rows)
 }
 
-// combinedTable renders both metrics as one table, a row per language, with
-// each cell holding the complexity and the LOC side by side. The console
+// combinedTable renders Delta and Change for both metrics as one table, a row
+// per language, with complexity and LOC side by side in each cell. The console
 // wants the whole picture in one glance rather than two tables to scroll
 // between.
 //
-// A language with nothing on either side is left out. A language with lines
-// but no branches keeps its row, because its LOC still says something; only a
-// language absent from both sides is noise. The total row is kept whatever it
-// holds: it is what tells a reader the table is a table.
+// Languages with zero complexity across both comparisons are left out. The
+// total includes all languages and is always kept, even when both metrics are zero.
 //
 // The cells are built a column at a time, because aligning both numbers of a
 // pair needs the whole column: one cell does not know how wide the widest LOC
 // below it is.
-func combinedTable(c *analyze.Comparison) []string {
+func combinedTable(c, main *analyze.Comparison) []string {
+	mainByName := make(map[string]analyze.LanguageStats, len(main.Languages))
+	for _, language := range main.Languages {
+		mainByName[language.Name] = language
+	}
+
 	stats := make([]analyze.LanguageStats, 0, len(c.Languages)+1)
+	mainStats := make([]analyze.LanguageStats, 0, len(main.Languages)+1)
+	seen := make(map[string]bool, len(c.Languages))
 	for _, language := range c.Languages {
-		if empty(language.Code) && empty(language.Complexity) {
+		seen[language.Name] = true
+		mainLanguage := mainByName[language.Name]
+		if empty(language.Complexity) && empty(mainLanguage.Complexity) {
 			continue
 		}
 
 		stats = append(stats, language)
+		mainStats = append(mainStats, mainLanguage)
+	}
+	// Languages present only in main's baseline have zero current LOC and go
+	// last, preserving the comparison's ordering for the remaining rows.
+	for _, language := range main.Languages {
+		if seen[language.Name] || empty(language.Complexity) {
+			continue
+		}
+		stats = append(stats, analyze.LanguageStats{Name: language.Name})
+		mainStats = append(mainStats, language)
 	}
 
 	total := c.Total
 	total.Name = "Total"
 	stats = append(stats, total)
+	mainStats = append(mainStats, main.Total)
 
-	baseline := make([]markdown.Pair, len(stats))
-	current := make([]markdown.Pair, len(stats))
 	delta := make([]markdown.Pair, len(stats))
 	change := make([]markdown.Pair, len(stats))
+	mainDelta := make([]markdown.Pair, len(stats))
+	mainChange := make([]markdown.Pair, len(stats))
 	for i, s := range stats {
-		baseline[i] = markdown.Pair{Lead: group(s.Complexity.Baseline), Trailing: group(s.Code.Baseline)}
-		current[i] = markdown.Pair{Lead: group(s.Complexity.Current), Trailing: group(s.Code.Current)}
 		delta[i] = markdown.Pair{Lead: signed(s.Complexity.Delta()), Trailing: signed(s.Code.Delta())}
 		change[i] = markdown.Pair{Lead: changeCell(s.Complexity), Trailing: changeCell(s.Code)}
+		m := mainStats[i]
+		mainDelta[i] = markdown.Pair{Lead: signed(m.Complexity.Delta()), Trailing: signed(m.Code.Delta())}
+		mainChange[i] = markdown.Pair{Lead: changeCell(m.Complexity), Trailing: changeCell(m.Code)}
 	}
 
-	counts := [][]string{
-		markdown.PairCells(baseline),
-		markdown.PairCells(current),
-		markdown.PairCells(delta),
-		markdown.PairCells(change),
-	}
+	deltaCells := markdown.PairCells(delta)
+	changeCells := markdown.PairCells(change)
+	mainDeltaCells := markdown.PairCells(mainDelta)
+	mainChangeCells := markdown.PairCells(mainChange)
 
 	rows := make([][]string, len(stats))
 	for i, s := range stats {
-		row := make([]string, 0, len(metricColumns))
-		row = append(row, s.Name)
-		for _, cells := range counts {
-			row = append(row, cells[i])
-		}
-		rows[i] = row
+		rows[i] = []string{s.Name, deltaCells[i], changeCells[i], mainDeltaCells[i], mainChangeCells[i]}
 	}
 
-	return markdown.Table(metricColumns, rows)
+	columns := []markdown.Column{
+		{Heading: "Language", Alignment: markdown.AlignLeft},
+		{Heading: "Delta", Alignment: markdown.AlignRight},
+		{Heading: "Change", Alignment: markdown.AlignRight},
+		{Heading: "Delta (main)", Alignment: markdown.AlignRight},
+		{Heading: "Change (main)", Alignment: markdown.AlignRight},
+	}
+
+	return markdown.Table(columns, rows)
 }
 
 // empty says whether a metric carries nothing on either side.

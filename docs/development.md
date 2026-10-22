@@ -15,7 +15,7 @@
 ```shell
 task run                    # writes codezor.md for this repository
 task run -- -path ../other   # flags are passed after --
-task summary                # prints the uncommitted change, writes nothing
+task summary                # prints changes against HEAD and main, writes nothing
 ```
 
 ## Checks

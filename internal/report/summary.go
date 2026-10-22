@@ -6,15 +6,15 @@ import (
 	"github.com/miroslav-matejovsky/codezor/internal/analyze"
 )
 
-// Summary renders the comparison for a terminal: one table holding both
-// metrics, with no markdown emphasis, so the columns line up as printed. The
-// label says which number is which, since the column headings cannot.
-func Summary(c *analyze.Comparison) string {
-	lines := []string{
-		"Complexity (LOC)",
-		"",
-	}
-	lines = append(lines, combinedTable(c)...)
+// Summary renders changes against HEAD and the merge base with main in one
+// terminal table. Each numeric cell holds complexity and LOC, identified by
+// the label directly below the table. Languages with zero complexity across
+// both comparisons are omitted; totals include all languages. The comparisons
+// must describe the same working tree, with c relative to HEAD and main
+// relative to the merge base with main.
+func Summary(c, main *analyze.Comparison) string {
+	lines := combinedTable(c, main)
+	lines = append(lines, "Complexity (LOC)")
 
 	return strings.Join(lines, "\n") + "\n"
 }
