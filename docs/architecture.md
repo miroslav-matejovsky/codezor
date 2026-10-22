@@ -18,6 +18,9 @@ counts, one renders, one lays out tables.
 
 `main` wires `analyze` and `report` together. The report uses the merge base with
 main; the summary combines that comparison with a comparison against HEAD.
+The CLI prints the summary by default, using the current directory or the
+provided repository path. It writes a markdown report when `-out` is supplied;
+an explicit `-summary` selects console output instead.
 The summary runs the comparisons sequentially and joins their rows by language.
 `analyze` reads the repository through `gitrepo` rather than
 running git itself. `report` sees only codezor's own types, and hands its cells

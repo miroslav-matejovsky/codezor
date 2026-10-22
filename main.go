@@ -5,8 +5,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/miroslav-matejovsky/codezor/internal/analyze"
@@ -19,20 +21,66 @@ import (
 const baselineBranch = "main"
 
 func main() {
-	path := flag.String("path", ".", "directory inside the repository to analyze")
-	out := flag.String("out", "codezor.md", "markdown report to write")
-	summary := flag.Bool("summary", false, "print the summary table to stdout and write no report")
-	flag.Parse()
+	opts, err := parseOptions(os.Args[1:], os.Stderr)
+	if errors.Is(err, flag.ErrHelp) {
+		return
+	}
+	if err == nil {
+		err = run(context.Background(), opts.path, opts.out, opts.summary)
+	}
 
-	if err := run(context.Background(), *path, *out, *summary); err != nil {
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "codezor:", err)
 		os.Exit(1)
 	}
 }
 
+type options struct {
+	path    string
+	out     string
+	summary bool
+}
+
+// parseOptions accepts one repository path, with flags before or after it.
+func parseOptions(args []string, output io.Writer) (options, error) {
+	var opts options
+	flags := flag.NewFlagSet("codezor", flag.ContinueOnError)
+	flags.SetOutput(output)
+	flags.StringVar(&opts.path, "path", ".", "directory inside the repository to analyze")
+	flags.StringVar(&opts.out, "out", "", "markdown report to write (default: print summary)")
+	flags.BoolVar(&opts.summary, "summary", false, "print the summary table to stdout and write no report")
+
+	var positional []string
+	for {
+		if err := flags.Parse(args); err != nil {
+			return opts, err
+		}
+		args = flags.Args()
+		if len(args) == 0 {
+			break
+		}
+		positional = append(positional, args[0])
+		args = args[1:]
+	}
+	pathFlag := false
+	flags.Visit(func(f *flag.Flag) {
+		if f.Name == "path" {
+			pathFlag = true
+		}
+	})
+	if len(positional) > 1 || (len(positional) == 1 && pathFlag) {
+		return opts, errors.New("provide one repository path, either as an argument or with -path")
+	}
+	if len(positional) == 1 {
+		opts.path = positional[0]
+	}
+
+	return opts, nil
+}
+
 // run picks the rendering, so main only handles flags and the exit code.
 func run(ctx context.Context, path, out string, summary bool) error {
-	if summary {
+	if summary || out == "" {
 		return printSummary(ctx, path)
 	}
 

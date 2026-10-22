@@ -22,8 +22,8 @@ Run these commands inside the repository you want to measure:
 
 ```shell
 go run github.com/miroslav-matejovsky/codezor@latest
-go run github.com/miroslav-matejovsky/codezor@latest -summary
-go run github.com/miroslav-matejovsky/codezor@latest -path ../other -out out.md
+go run github.com/miroslav-matejovsky/codezor@latest ../other
+go run github.com/miroslav-matejovsky/codezor@latest ../other -out out.md
 ```
 
 Go downloads and compiles codezor, then runs it without installing a `codezor`
@@ -35,12 +35,13 @@ From a local checkout of codezor, run:
 
 ```shell
 go run .
-go run . -summary
-go run . -path ../other -out out.md
+go run . ../other
+go run . ../other -out out.md
 ```
 
-`go run .` uses the local source. `-path` selects the repository to measure;
-`-out` is relative to the directory where you run the command.
+`go run .` uses the local source. A positional path or `-path` selects the
+repository to measure. `-out` is relative to the directory where you run the
+command. Flags can appear before or after the positional path.
 
 ## Install
 
@@ -60,22 +61,23 @@ takes the newest release. Add Go's binary directory (`GOBIN`, or `bin` under
 Run it anywhere inside the repository you want to measure.
 
 ```shell
-codezor                              # writes codezor.md for this repository
-codezor -summary                     # prints changes against HEAD and main
-codezor -path ../other -out out.md   # another repository, another report
+codezor                            # prints the summary for this repository
+codezor ../other                   # prints the summary for another repository
+codezor -out codezor.md            # writes a markdown report for this repository
+codezor ../other -out out.md       # writes a report for another repository
 ```
 
 | Flag       | Default      | Meaning                                                 |
 | ---------- | ------------ | ------------------------------------------------------- |
 | `-path`    | `.`          | Directory inside the repository to analyze.             |
-| `-out`     | `codezor.md` | Markdown report to write.                               |
+| `-out`     | unset        | Markdown report to write; otherwise print the summary. |
 | `-summary` | `false`      | Print changes against HEAD and main; write nothing.    |
 
 Exit status is zero on success, one on failure, with the reason on stderr.
 
 ## Output
 
-`-summary` writes nothing to disk, so it is the view for the inner loop:
+By default, codezor prints a summary and writes nothing to disk:
 
 ```text
 | Language (cplx loc) |   Delta |       Change | Delta (main) | Change (main) |
@@ -89,8 +91,10 @@ Every cell is the complexity with the LOC beside it, so a language is one row
 and the whole change fits one screen. Both numbers are padded down the column,
 the LOC ones among themselves. The `Language (cplx loc)` header identifies this order.
 
-Without `-summary` the two metrics go to `codezor.md` as a table each, under
-markdown headings and with the totals emphasised. Neither view explains itself:
+With `-out path`, the two metrics go to the requested file as a table each,
+under markdown headings and with the totals emphasised. `-summary` explicitly
+selects the console summary, including when `-out` is also provided.
+Neither view explains itself:
 the numbers are defined here and in `docs/measurements.md`, not repeated in
 every report. The file carries no timestamp, so an unchanged tree rewrites the
 same bytes and the report diffs cleanly between runs.

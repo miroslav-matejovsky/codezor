@@ -13,9 +13,11 @@
 ## Running it
 
 ```shell
-task run                    # writes codezor.md for this repository
-task run -- -path ../other   # flags are passed after --
+task run                    # prints the summary for this repository
+task run -- ../other        # arguments are passed after --
+task run -- -out codezor.md  # writes a markdown report
 task summary                # prints changes against HEAD and main, writes nothing
+task file                   # writes this repository's report to codezor.md
 ```
 
 ## Checks
