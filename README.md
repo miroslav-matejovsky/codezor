@@ -44,17 +44,16 @@ Exit status is zero on success, one on failure, with the reason on stderr.
 `-summary` writes nothing to disk, so it is the view for the inner loop:
 
 ```text
-| Language   |   Delta |       Change | Delta (main) | Change (main) |
-| ---------- | ------: | -----------: | -----------: | ------------: |
-| Go         | +8 +113 | +6.3% +10.9% |      +8 +113 |  +6.3% +10.9% |
-| Powershell |  0    0 |  0.0%   0.0% |       0    0 |   0.0%   0.0% |
-| Total      | +8 +122 | +5.5%  +5.5% |      +8 +122 |  +5.5%  +5.5% |
-Complexity (LOC)
+| Language (cplx loc) |   Delta |       Change | Delta (main) | Change (main) |
+| ------------------- | ------: | -----------: | -----------: | ------------: |
+| Go                  | +8 +113 | +6.3% +10.9% |      +8 +113 |  +6.3% +10.9% |
+| Powershell          |  0    0 |  0.0%   0.0% |       0    0 |   0.0%   0.0% |
+| Total               | +8 +122 | +5.5%  +5.5% |      +8 +122 |  +5.5%  +5.5% |
 ```
 
 Every cell is the complexity with the LOC beside it, so a language is one row
 and the whole change fits one screen. Both numbers are padded down the column,
-the LOC ones among themselves. The label sits directly below the table.
+the LOC ones among themselves. The `Language (cplx loc)` header identifies this order.
 
 Without `-summary` the two metrics go to `codezor.md` as a table each, under
 markdown headings and with the totals emphasised. Neither view explains itself:
@@ -64,7 +63,7 @@ same bytes and the report diffs cleanly between runs.
 
 ## Reading the tables
 
-Every table orders languages by current LOC. The summary shows Language,
+Every table orders languages by current LOC. The summary shows Language (cplx loc),
 Delta, Change, Delta (main) and Change (main), with one row per language with
 complexity in HEAD, the working tree or main's baseline. The report shows
 Baseline, Current, Delta and Change in separate tables for each metric. Its

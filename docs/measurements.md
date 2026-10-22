@@ -69,7 +69,7 @@ a different number of rows.
 ## Renderings
 
 The report writes a table per metric with Baseline, Current, Delta and Change.
-The summary shows Language, Delta, Change, Delta (main) and Change (main) in one
+The summary shows Language (cplx loc), Delta, Change, Delta (main) and Change (main) in one
 table, with both metrics in each numeric cell: complexity, then LOC beside it.
 Both numbers are padded
 down the column, the LOC ones among themselves, so a column reads as two columns
@@ -81,8 +81,8 @@ complexity in HEAD, main's baseline or the working tree. Languages absent from
 one comparison have zero counts there and `n/a` for percentage changes. Rows
 present only in main's baseline have zero current LOC and appear last, before
 the total. The summary leaves out languages with zero complexity throughout. Totals
-include all languages for both metrics. The `Complexity (LOC)` label appears
-directly below the table, with no blank line between them.
+include all languages for both metrics. The `Language (cplx loc)` header identifies
+the metric order.
 
 ## Determinism
 

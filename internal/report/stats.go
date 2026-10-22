@@ -116,7 +116,7 @@ func combinedTable(c, main *analyze.Comparison) []string {
 	}
 
 	columns := []markdown.Column{
-		{Heading: "Language", Alignment: markdown.AlignLeft},
+		{Heading: "Language (cplx loc)", Alignment: markdown.AlignLeft},
 		{Heading: "Delta", Alignment: markdown.AlignRight},
 		{Heading: "Change", Alignment: markdown.AlignRight},
 		{Heading: "Delta (main)", Alignment: markdown.AlignRight},

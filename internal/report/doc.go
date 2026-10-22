@@ -3,8 +3,8 @@
 // The markdown report gives LOC and complexity a table each under a heading,
 // with Baseline, Current, Delta and Change columns and emphasised totals.
 // The console shows Delta and Change against HEAD and the merge base with main,
-// with both metrics per cell and one row per language. The Complexity (LOC)
-// label follows immediately below the table. Both complexity views omit
+// with both metrics per cell and one row per language. The Language (cplx loc)
+// header identifies the metric order. Both complexity views omit
 // languages with zero complexity across their comparisons;
 // totals include every language. What the columns mean belongs in the
 // documentation, so neither rendering repeats it.

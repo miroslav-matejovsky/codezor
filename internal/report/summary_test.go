@@ -16,13 +16,12 @@ import (
 // sets no column width of its own.
 func TestSummaryIsOneTableOfBothMetrics(t *testing.T) {
 	want := strings.Join([]string{
-		"| Language   |       Delta |      Change | Delta (main) | Change (main) |",
-		"| ---------- | ----------: | ----------: | -----------: | ------------: |",
-		"| Go         | +187 +1,181 | +4.5% +3.1% |  +187 +1,181 |   +4.5% +3.1% |",
-		"| PowerShell |    0    +57 |  0.0% +4.7% |     0    +57 |    0.0% +4.7% |",
-		"| YAML       |   -3    -76 | -9.7% -9.0% |    -3    -76 |   -9.7% -9.0% |",
-		"| Total      | +184 +1,282 | +4.3% +3.2% |  +184 +1,282 |   +4.3% +3.2% |",
-		"Complexity (LOC)",
+		"| Language (cplx loc) |       Delta |      Change | Delta (main) | Change (main) |",
+		"| ------------------- | ----------: | ----------: | -----------: | ------------: |",
+		"| Go                  | +187 +1,181 | +4.5% +3.1% |  +187 +1,181 |   +4.5% +3.1% |",
+		"| PowerShell          |    0    +57 |  0.0% +4.7% |     0    +57 |    0.0% +4.7% |",
+		"| YAML                |   -3    -76 | -9.7% -9.0% |    -3    -76 |   -9.7% -9.0% |",
+		"| Total               | +184 +1,282 | +4.3% +3.2% |  +184 +1,282 |   +4.3% +3.2% |",
 	}, "\n")
 
 	s := report.Summary(fixture(), fixture())
@@ -67,10 +66,9 @@ func TestSummaryIsDeterministic(t *testing.T) {
 // With no rows at all the headings still set the column widths.
 func TestSummaryHandlesEmptyRepository(t *testing.T) {
 	want := strings.Join([]string{
-		"| Language | Delta |  Change | Delta (main) | Change (main) |",
-		"| -------- | ----: | ------: | -----------: | ------------: |",
-		"| Total    |   0 0 | n/a n/a |          0 0 |       n/a n/a |",
-		"Complexity (LOC)",
+		"| Language (cplx loc) | Delta |  Change | Delta (main) | Change (main) |",
+		"| ------------------- | ----: | ------: | -----------: | ------------: |",
+		"| Total               |   0 0 | n/a n/a |          0 0 |       n/a n/a |",
 	}, "\n")
 
 	s := report.Summary(&analyze.Comparison{}, &analyze.Comparison{})
