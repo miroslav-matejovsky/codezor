@@ -82,7 +82,7 @@ tasks:
 # ---- running stuff ----
 
   run:
-    desc: 'Run codezor on this repository, writing codezor.md'
+    desc: 'Run codezor on this repository, printing the summary unless -out is provided'
     silent: true
     cmds:
       - go run . {{.CLI_ARGS}}
@@ -92,6 +92,12 @@ tasks:
     silent: true
     cmds:
       - go run . -summary {{.CLI_ARGS}}
+
+  file:
+    desc: 'Write the codezor markdown report for this repository to codezor.md'
+    silent: true
+    cmds:
+      - go run . -out codezor.md
 
 # ---- release ----
 

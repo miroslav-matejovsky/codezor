@@ -88,9 +88,9 @@ the metric order.
 
 Both renderings derive from the comparison alone, so the same tree always
 produces the same output. The report carries no timestamp: an unchanged tree
-renders an unchanged `codezor.md`, so the file diffs cleanly between runs.
+renders an unchanged report, so the file diffs cleanly between runs.
 
-`codezor.md` lives in the repository it measures, so it counts itself. Writing
-it is a change to the tree, and a run that alters the report's own line count
+When the `-out` file lives in the repository it measures and is not ignored,
+it counts itself. Writing it is a change to the tree, and a run that alters the report's own line count
 settles on the run after it. The summary writes nothing, so it does not move
 the numbers it reports.
