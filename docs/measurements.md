@@ -67,9 +67,9 @@ a different number of rows.
 ## Renderings
 
 The report writes a table per metric. The summary writes one, with both metrics
-in every cell: the complexity, then the LOC in parentheses. Both numbers are
-padded down the column, the parenthesised ones among themselves, so a column
-reads as two columns of digits. The numbers are the same either way; one row
+in every cell: the complexity, then the LOC beside it. Both numbers are padded
+down the column, the LOC ones among themselves, so a column reads as two columns
+of digits. The numbers are the same either way; one row
 per language is what fits a terminal.
 
 The summary leaves out only a language that is zero on both sides of both

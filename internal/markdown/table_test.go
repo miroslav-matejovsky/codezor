@@ -70,15 +70,15 @@ func TestTableRendersHeadingsWithoutRows(t *testing.T) {
 // which is what lets Table align the column as a whole.
 func TestPairCellsAlignBothPartsSeparately(t *testing.T) {
 	want := []string{
-		"4,201 (38,420)",
-		"   96 ( 1,204)",
-		"    0 (     0)",
+		"4,201 38,420",
+		"   96  1,204",
+		"    0      0",
 	}
 
 	got := markdown.PairCells([]markdown.Pair{
-		{Lead: "4,201", Parenthesised: "38,420"},
-		{Lead: "96", Parenthesised: "1,204"},
-		{Lead: "0", Parenthesised: "0"},
+		{Lead: "4,201", Trailing: "38,420"},
+		{Lead: "96", Trailing: "1,204"},
+		{Lead: "0", Trailing: "0"},
 	})
 
 	require.Equal(t, want, got)

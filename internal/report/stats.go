@@ -49,7 +49,7 @@ func metricTable(c *analyze.Comparison, pick func(analyze.LanguageStats) analyze
 }
 
 // combinedTable renders both metrics as one table, a row per language, with
-// each cell holding the complexity and the LOC in parentheses. The console
+// each cell holding the complexity and the LOC side by side. The console
 // wants the whole picture in one glance rather than two tables to scroll
 // between.
 //
@@ -80,10 +80,10 @@ func combinedTable(c *analyze.Comparison) []string {
 	delta := make([]markdown.Pair, len(stats))
 	change := make([]markdown.Pair, len(stats))
 	for i, s := range stats {
-		baseline[i] = markdown.Pair{Lead: group(s.Complexity.Baseline), Parenthesised: group(s.Code.Baseline)}
-		current[i] = markdown.Pair{Lead: group(s.Complexity.Current), Parenthesised: group(s.Code.Current)}
-		delta[i] = markdown.Pair{Lead: signed(s.Complexity.Delta()), Parenthesised: signed(s.Code.Delta())}
-		change[i] = markdown.Pair{Lead: changeCell(s.Complexity), Parenthesised: changeCell(s.Code)}
+		baseline[i] = markdown.Pair{Lead: group(s.Complexity.Baseline), Trailing: group(s.Code.Baseline)}
+		current[i] = markdown.Pair{Lead: group(s.Complexity.Current), Trailing: group(s.Code.Current)}
+		delta[i] = markdown.Pair{Lead: signed(s.Complexity.Delta()), Trailing: signed(s.Code.Delta())}
+		change[i] = markdown.Pair{Lead: changeCell(s.Complexity), Trailing: changeCell(s.Code)}
 	}
 
 	counts := [][]string{

@@ -46,20 +46,20 @@ Exit status is zero on success, one on failure, with the reason on stderr.
 ```text
 Complexity (LOC)
 
-| Language   |    Baseline |     Current |     Delta |         Change |
-| ---------- | ----------: | ----------: | --------: | -------------: |
-| Go         | 126 (1,041) | 134 (1,154) | +8 (+113) | +6.3% (+10.9%) |
-| Markdown   |   0 (  504) |   0 (  512) |  0 (  +8) |   n/a ( +1.6%) |
-| YAML       |   0 (  221) |   0 (  222) |  0 (  +1) |   n/a ( +0.5%) |
-| License    |   0 (  216) |   0 (  216) |  0 (   0) |   n/a (  0.0%) |
-| JSON       |   0 (  113) |   0 (  113) |  0 (   0) |   n/a (  0.0%) |
-| Powershell |  20 (  111) |  20 (  111) |  0 (   0) |  0.0% (  0.0%) |
-| Total      | 146 (2,206) | 154 (2,328) | +8 (+122) | +5.5% ( +5.5%) |
+| Language   |  Baseline |   Current |   Delta |       Change |
+| ---------- | --------: | --------: | ------: | -----------: |
+| Go         | 126 1,041 | 134 1,154 | +8 +113 | +6.3% +10.9% |
+| Markdown   |   0   504 |   0   512 |  0   +8 |   n/a  +1.6% |
+| YAML       |   0   221 |   0   222 |  0   +1 |   n/a  +0.5% |
+| License    |   0   216 |   0   216 |  0    0 |   n/a   0.0% |
+| JSON       |   0   113 |   0   113 |  0    0 |   n/a   0.0% |
+| Powershell |  20   111 |  20   111 |  0    0 |  0.0%   0.0% |
+| Total      | 146 2,206 | 154 2,328 | +8 +122 | +5.5%  +5.5% |
 ```
 
-Every cell is the complexity with the LOC in parentheses, so a language is one
-row and the whole change fits one screen. Both numbers are padded down the
-column, the parenthesised ones among themselves.
+Every cell is the complexity with the LOC beside it, so a language is one row
+and the whole change fits one screen. Both numbers are padded down the column,
+the LOC ones among themselves.
 
 Without `-summary` the two metrics go to `codezor.md` as a table each, under
 markdown headings and with the totals emphasised. Neither view explains itself:

@@ -24,10 +24,10 @@ type Column struct {
 	Alignment Alignment
 }
 
-// Pair is a cell holding two values, the second one in parentheses.
+// Pair is a cell holding two values, the second one after the first.
 type Pair struct {
-	Lead          string
-	Parenthesised string
+	Lead     string
+	Trailing string
 }
 
 // Table lays out a markdown table with padded columns.
@@ -59,22 +59,22 @@ func Table(columns []Column, rows [][]string) []string {
 
 // PairCells renders one column's pairs as cells. Each part is padded to the
 // widest of its own kind, so the leading values line up under each other and
-// the parenthesised ones do too: one column of pairs reads as two columns of
+// the trailing ones do too: one column of pairs reads as two columns of
 // digits.
 //
 // Both parts are right aligned, since a pair is a pair of counts. Every cell
 // comes out the same width, so Table then pads the column only against its
 // heading.
 func PairCells(pairs []Pair) []string {
-	var lead, parenthesised int
+	var lead, trailing int
 	for _, p := range pairs {
 		lead = max(lead, utf8.RuneCountInString(p.Lead))
-		parenthesised = max(parenthesised, utf8.RuneCountInString(p.Parenthesised))
+		trailing = max(trailing, utf8.RuneCountInString(p.Trailing))
 	}
 
 	cells := make([]string, len(pairs))
 	for i, p := range pairs {
-		cells[i] = pad(p.Lead, lead, AlignRight) + " (" + pad(p.Parenthesised, parenthesised, AlignRight) + ")"
+		cells[i] = pad(p.Lead, lead, AlignRight) + " " + pad(p.Trailing, trailing, AlignRight)
 	}
 
 	return cells

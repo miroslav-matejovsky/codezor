@@ -10,21 +10,21 @@ import (
 )
 
 // The console shows both metrics in one table, one row per language, each cell
-// holding the complexity with the LOC in parentheses. Both numbers are aligned
-// down the column, the parenthesised ones among themselves, so a column reads
-// as two columns of digits. The table carries no markdown emphasis, so the
-// total row sets no column width of its own.
+// holding the complexity and the LOC side by side. Both numbers are aligned
+// down the column, the LOC ones among themselves, so a column reads as two
+// columns of digits. The table carries no markdown emphasis, so the total row
+// sets no column width of its own.
 func TestSummaryIsOneTableOfBothMetrics(t *testing.T) {
 	want := strings.Join([]string{
 		"Complexity (LOC)",
 		"",
-		"| Language   |       Baseline |        Current |         Delta |        Change |",
-		"| ---------- | -------------: | -------------: | ------------: | ------------: |",
-		"| Go         | 4,201 (38,420) | 4,388 (39,601) | +187 (+1,181) | +4.5% (+3.1%) |",
-		"| PowerShell |    96 ( 1,204) |    96 ( 1,261) |    0 (   +57) |  0.0% (+4.7%) |",
-		"| Markdown   |     0 (     0) |     0 (   120) |    0 (  +120) |   n/a (  n/a) |",
-		"| YAML       |    31 (   842) |    28 (   766) |   -3 (   -76) | -9.7% (-9.0%) |",
-		"| Total      | 4,328 (40,466) | 4,512 (41,748) | +184 (+1,282) | +4.3% (+3.2%) |",
+		"| Language   |     Baseline |      Current |       Delta |      Change |",
+		"| ---------- | -----------: | -----------: | ----------: | ----------: |",
+		"| Go         | 4,201 38,420 | 4,388 39,601 | +187 +1,181 | +4.5% +3.1% |",
+		"| PowerShell |    96  1,204 |    96  1,261 |    0    +57 |  0.0% +4.7% |",
+		"| Markdown   |     0      0 |     0    120 |    0   +120 |   n/a   n/a |",
+		"| YAML       |    31    842 |    28    766 |   -3    -76 | -9.7% -9.0% |",
+		"| Total      | 4,328 40,466 | 4,512 41,748 | +184 +1,282 | +4.3% +3.2% |",
 	}, "\n")
 
 	s := report.Summary(fixture())
@@ -62,9 +62,9 @@ func TestSummaryIsDeterministic(t *testing.T) {
 // With no rows at all the headings still set the column widths.
 func TestSummaryHandlesEmptyRepository(t *testing.T) {
 	want := strings.Join([]string{
-		"| Language | Baseline | Current | Delta |    Change |",
-		"| -------- | -------: | ------: | ----: | --------: |",
-		"| Total    |    0 (0) |   0 (0) | 0 (0) | n/a (n/a) |",
+		"| Language | Baseline | Current | Delta |  Change |",
+		"| -------- | -------: | ------: | ----: | ------: |",
+		"| Total    |      0 0 |     0 0 |   0 0 | n/a n/a |",
 	}, "\n")
 
 	s := report.Summary(&analyze.Comparison{})
