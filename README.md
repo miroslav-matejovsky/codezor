@@ -10,16 +10,50 @@ Two views of the same numbers:
 - a markdown report of everything the current branch changed against `main`
 - a console summary of uncommitted work and the full change against `main`
 
+## Requirements
+
+- Go 1.27.3 or newer to run from source or install with Go.
+- `git` on `PATH`.
+- A repository with a local `main` branch and a common ancestor with `HEAD`.
+
+## Run without installing
+
+Run these commands inside the repository you want to measure:
+
+```shell
+go run github.com/miroslav-matejovsky/codezor@latest
+go run github.com/miroslav-matejovsky/codezor@latest -summary
+go run github.com/miroslav-matejovsky/codezor@latest -path ../other -out out.md
+```
+
+Go downloads and compiles codezor, then runs it without installing a `codezor`
+command. The first run needs network access to download the source and its
+dependencies. Use `@v0.1.0` instead of `@latest` to pin a release. The version
+suffix keeps this command independent of the target repository's `go.mod`.
+
+From a local checkout of codezor, run:
+
+```shell
+go run .
+go run . -summary
+go run . -path ../other -out out.md
+```
+
+`go run .` uses the local source. `-path` selects the repository to measure;
+`-out` is relative to the directory where you run the command.
+
 ## Install
+
+To keep a `codezor` command available for repeated use:
 
 ```shell
 go install github.com/miroslav-matejovsky/codezor@latest   # newest release
 go install github.com/miroslav-matejovsky/codezor@v0.1.0   # a pinned release
 ```
 
-Releases are semver git tags, so `@vX.Y.Z` pins an exact build and `@latest`
-takes the newest tag. Building needs Go 1.27.3 or newer; running needs `git` on
-`PATH` and nothing else.
+Releases are semver git tags, so `@vX.Y.Z` pins an exact release and `@latest`
+takes the newest release. Add Go's binary directory (`GOBIN`, or `bin` under
+`GOPATH` if `GOBIN` is unset) to `PATH` to use the installed command.
 
 ## Usage
 
