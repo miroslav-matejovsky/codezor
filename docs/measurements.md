@@ -1,0 +1,96 @@
+# Measurements
+
+Every number codezor prints or writes comes from a comparison: a committed
+baseline tree against the working tree. Two quantities are reported over the
+same files, LOC and complexity. This document defines both sides and both
+quantities.
+
+## Baseline
+
+The report's baseline is the merge base between `main` and `HEAD`, not the tip
+of `main`. The delta is therefore what this branch changed: commits that landed
+on `main` after the branch started do not move the numbers. On `main` itself the
+merge base is `HEAD`, so the report shows uncommitted work alone.
+
+The summary uses two baselines. Delta and Change use `HEAD`, the tip of the
+current branch, so they measure uncommitted and untracked work alone.
+Delta (main) and Change (main) use the same merge base with `main` as the report,
+so they include committed, uncommitted and untracked work. The summary requires
+a local `main` branch with a common ancestor with HEAD.
+
+The baseline side is the committed tree at that revision. The current side is
+the files on disk: tracked files, including staged and unstaged edits, plus
+untracked ones, and nothing `.gitignore` covers.
+
+Both sides are enumerated by git and counted by the same counter, so the two
+columns are comparable by construction. Everything is measured from the work
+tree root, so the result does not depend on which subdirectory codezor ran in.
+
+The summary names the main comparison in its column headings; the report uses
+the merge base with main throughout.
+
+A repository without commits has no baseline, and a run there fails rather than
+reporting the working tree against nothing.
+
+## LOC
+
+LOC is code lines as scc counts them. Comment and blank lines are excluded.
+Three kinds of file are counted on neither side: binaries, files whose language
+scc does not recognise, and ignore files such as `.gitignore`, which steer a
+walk rather than hold code.
+
+Rows are ordered by current size, so the largest languages read first, and the
+`Total` row includes all languages, even those hidden by the summary's
+complexity filter. A language present on one side only has zero on the other.
+
+A language the baseline did not contain shows `n/a` for its relative change,
+since a percentage of a zero baseline would read as no change.
+
+## Complexity
+
+Complexity is scc's complexity estimate: a count of the branching keywords and
+operators its language database lists for the language, summed over exactly the
+files LOC counts. In Go an `if` and a `for` each add one, so a function holding
+both scores two.
+
+It is an indicator of how hard the code is to follow, not a measured cyclomatic
+complexity. The keyword lists differ per language, so read a language against
+its own baseline rather than against another language.
+
+Ordering is the LOC table's. A zero baseline shows `n/a` for the relative
+change, for the same reason LOC does.
+
+The report gives complexity a table of its own, and leaves out a language whose
+complexity is zero on both sides: its row would be a line of zeroes and an
+`n/a`, which is what a language of plain prose or data looks like. It still
+counts toward the `Total`, and it keeps its LOC row, so the two tables can hold
+a different number of rows.
+
+## Renderings
+
+The report writes a table per metric with Baseline, Current, Delta and Change.
+The summary shows Language (cplx loc), Delta, Change, Delta (main) and Change (main) in one
+table, with both metrics in each numeric cell: complexity, then LOC beside it.
+Both numbers are padded
+down the column, the LOC ones among themselves, so a column reads as two columns
+of digits. The numbers are the same either way; one row
+per language is what fits a terminal.
+
+The summary joins comparisons by language name, keeping languages with
+complexity in HEAD, main's baseline or the working tree. Languages absent from
+one comparison have zero counts there and `n/a` for percentage changes. Rows
+present only in main's baseline have zero current LOC and appear last, before
+the total. The summary leaves out languages with zero complexity throughout. Totals
+include all languages for both metrics. The `Language (cplx loc)` header identifies
+the metric order.
+
+## Determinism
+
+Both renderings derive from the comparison alone, so the same tree always
+produces the same output. The report carries no timestamp: an unchanged tree
+renders an unchanged `codezor.md`, so the file diffs cleanly between runs.
+
+`codezor.md` lives in the repository it measures, so it counts itself. Writing
+it is a change to the tree, and a run that alters the report's own line count
+settles on the run after it. The summary writes nothing, so it does not move
+the numbers it reports.

@@ -87,6 +87,12 @@ tasks:
     cmds:
       - go run . {{.CLI_ARGS}}
 
+  summary:
+    desc: 'Print the codezor summary table for this repository, writing no report'
+    silent: true
+    cmds:
+      - go run . -summary {{.CLI_ARGS}}
+
 # ---- release ----
 
   release:

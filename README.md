@@ -1,81 +1,115 @@
 # codezor
 
-codezor counts the code in a git repository and compares the working tree
-against the branch it forked from. It runs locally, reads the tree as it is on
-disk, and writes a markdown report.
+codezor counts the code in a git repository and shows how big the current
+change is, in lines and in complexity. It runs locally, reads the working tree
+as it is on disk, and needs no service, no account, and no counting tool
+installed.
+
+Two views of the same numbers:
+
+- a markdown report of everything the current branch changed against `main`
+- a console summary of uncommitted work and the full change against `main`
+
+## Install
+
+```shell
+go install github.com/miroslav-matejovsky/codezor@latest   # newest release
+go install github.com/miroslav-matejovsky/codezor@v0.1.0   # a pinned release
+```
+
+Releases are semver git tags, so `@vX.Y.Z` pins an exact build and `@latest`
+takes the newest tag. Building needs Go 1.27.3 or newer; running needs `git` on
+`PATH` and nothing else.
 
 ## Usage
 
+Run it anywhere inside the repository you want to measure.
+
 ```shell
-go run .                              # writes codezor.md for this repository
-go run . -path ../other -out out.md   # another repository, another report
+codezor                              # writes codezor.md for this repository
+codezor -summary                     # prints changes against HEAD and main
+codezor -path ../other -out out.md   # another repository, another report
 ```
 
-| Flag    | Default      | Meaning                                     |
-| ------- | ------------ | ------------------------------------------- |
-| `-path` | `.`          | Directory inside the repository to analyze. |
-| `-out`  | `codezor.md` | Markdown report to write.                   |
+| Flag       | Default      | Meaning                                                 |
+| ---------- | ------------ | ------------------------------------------------------- |
+| `-path`    | `.`          | Directory inside the repository to analyze.             |
+| `-out`     | `codezor.md` | Markdown report to write.                               |
+| `-summary` | `false`      | Print changes against HEAD and main; write nothing.    |
 
-`task run` does the same and accepts the flags after `--`.
+Exit status is zero on success, one on failure, with the reason on stderr.
 
-## Architecture
+## Output
 
-| Path                | Responsibility                                              |
-| ------------------- | ----------------------------------------------------------- |
-| `main.go`           | Entry point: flags, wiring, exit code.                      |
-| `internal/analyze/` | Counts both sides and builds the comparison.                |
-| `internal/gitrepo/` | Reads the repository: baseline revision, trees, file lists. |
-| `internal/report/`  | Renders a comparison as markdown.                           |
-| `dev/`              | Working records: principles, studies, plans, bugs, backlog.  |
-| `taskfile/`         | PowerShell scripts behind the `Taskfile.yml` targets.       |
+`-summary` writes nothing to disk, so it is the view for the inner loop:
 
-Counting comes from [scc](https://github.com/boyter/scc), used as a library so
-codezor needs no counting tool installed. `internal/analyze` is the only
-package that touches scc; `internal/report` sees only codezor's own types.
-`internal/gitrepo` runs the `git` command line and nothing else, so git is the
-one external tool required, which a tool that measures a branch against another
-already implies.
+```text
+| Language (cplx loc) |   Delta |       Change | Delta (main) | Change (main) |
+| ------------------- | ------: | -----------: | -----------: | ------------: |
+| Go                  | +8 +113 | +6.3% +10.9% |      +8 +113 |  +6.3% +10.9% |
+| Powershell          |  0    0 |  0.0%   0.0% |       0    0 |   0.0%   0.0% |
+| Total               | +8 +122 | +5.5%  +5.5% |      +8 +122 |  +5.5%  +5.5% |
+```
 
-scc is pinned to `v3`. `v4` adds git history reports that pull in `go-git` and
-its ssh and crypto tail, which triples the dependency tree for features
-codezor does not use. The tradeoff is that `v3` no longer receives upstream
-fixes.
+Every cell is the complexity with the LOC beside it, so a language is one row
+and the whole change fits one screen. Both numbers are padded down the column,
+the LOC ones among themselves. The `Language (cplx loc)` header identifies this order.
 
-## Measurements
+Without `-summary` the two metrics go to `codezor.md` as a table each, under
+markdown headings and with the totals emphasised. Neither view explains itself:
+the numbers are defined here and in `docs/measurements.md`, not repeated in
+every report. The file carries no timestamp, so an unchanged tree rewrites the
+same bytes and the report diffs cleanly between runs.
 
-### Baseline
+## Reading the tables
 
-The baseline is the merge base between `main` and `HEAD`, not the tip of
-`main`. The delta is therefore what this branch changed: commits that landed on
-`main` after the branch started do not move the numbers. On `main` itself the
-baseline is `HEAD`, so the report shows uncommitted work alone.
+Every table orders languages by current LOC. The summary shows Language (cplx loc),
+Delta, Change, Delta (main) and Change (main), with one row per language with
+complexity in HEAD, the working tree or main's baseline. The report shows
+Baseline, Current, Delta and Change in separate tables for each metric. Its
+complexity table includes languages with complexity on either side. Totals
+include all languages, including LOC from languages whose rows are hidden.
 
-The baseline side is the committed tree at that revision. The current side is
-the files on disk: tracked files, including staged and unstaged edits, plus
-untracked ones, and nothing `.gitignore` covers.
+| Column     | Meaning                                                      |
+| ---------- | ------------------------------------------------------------ |
+| `Language` | Language of the counted files, plus a `Total` row.           |
+| `Baseline` | The count in the committed baseline tree.                    |
+| `Current`  | The count in the working tree as it is on disk.              |
+| `Delta`    | `Current` minus `Baseline`.                                  |
+| `Change`   | `Delta` relative to `Baseline`, or `n/a` for a zero baseline. |
+| `Delta (main)` | Working tree minus the merge base with `main`.          |
+| `Change (main)` | `Delta (main)` relative to that baseline, or `n/a` if zero. |
 
-Both sides are enumerated by git and counted by the same counter, so the two
-columns are comparable by construction.
+The baseline depends on the view. The report compares against the merge base
+between `main` and `HEAD`, so the delta is everything this branch changed,
+committed or not. In the summary, Delta and Change compare against `HEAD`, so
+they show only uncommitted and untracked work. Delta (main) and Change (main)
+use the report's merge base with `main`, including committed work as well.
+Both views require a local `main` branch with a common ancestor with HEAD.
 
-### LOC
+The current side is the files on disk: tracked files, with staged and unstaged
+edits, plus untracked ones, and nothing `.gitignore` covers. LOC is code lines:
+comments and blank lines are excluded, and so are binaries, files of no
+recognised language, and ignore files such as `.gitignore`.
 
-LOC is code lines as scc counts them. Comment and blank lines are excluded.
-Three kinds of file are counted on neither side: binaries, files whose language
-scc does not recognise, and ignore files such as `.gitignore`, which steer a
-walk rather than hold code.
+Complexity is scc's estimate over those same files: a count of the branching
+keywords and operators its language database lists. It says how hard the code
+is to follow, not how correct it is, and the keyword lists differ per language,
+so read a language against its own baseline. Languages with no branches across
+the compared revisions are omitted from the summary and the report's complexity
+table. They still count toward the `Total` and keep their rows in the report's
+LOC table.
 
-A language the baseline did not contain shows `n/a` for its relative change,
-since a percentage of a zero baseline would read as no change.
+`docs/measurements.md` gives the precise definitions.
 
-### Determinism
+## Documentation
 
-The report carries no timestamp: an unchanged tree renders an unchanged
-`codezor.md`, so the file diffs cleanly between runs.
+| Document                                     | Contents                                               |
+| -------------------------------------------- | ------------------------------------------------------ |
+| [docs/measurements.md](docs/measurements.md) | What each number means, exactly.                       |
+| [docs/architecture.md](docs/architecture.md) | Packages, their boundaries, and the counter behind them. |
+| [docs/development.md](docs/development.md)   | Building, checks, tests, and cutting a release.        |
 
-`codezor.md` lives in the repository it measures, so it counts itself. Writing
-it is a change to the tree, and a run that alters the report's own line count
-settles on the run after it.
+## License
 
-## Links
-
-- <https://github.com/boyter/scc>
+EUPL-1.2. See [LICENSE](LICENSE).

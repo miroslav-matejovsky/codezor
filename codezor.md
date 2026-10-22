@@ -1,16 +1,21 @@
 # Code Statistics
 
-Baseline: `main` (merge-base 4f6607d)
-Current: working tree, including uncommitted and untracked files
-
 ## LOC
 
-| Language   | Baseline |   Current |    Delta |     Change |
-| ---------- | -------: | --------: | -------: | ---------: |
-| Go         |       28 |       822 |     +794 |   +2835.7% |
-| Markdown   |      319 |       315 |       -4 |      -1.3% |
-| License    |      216 |       216 |        0 |       0.0% |
-| YAML       |      206 |       216 |      +10 |      +4.9% |
-| JSON       |      108 |       113 |       +5 |      +4.6% |
-| Powershell |      111 |       111 |        0 |       0.0% |
-| **Total**  |  **988** | **1,793** | **+805** | **+81.5%** |
+| Language   |  Baseline |   Current |    Delta |     Change |
+| ---------- | --------: | --------: | -------: | ---------: |
+| Go         |       822 |     1,154 |     +332 |     +40.4% |
+| Markdown   |       315 |       513 |     +198 |     +62.9% |
+| YAML       |       216 |       222 |       +6 |      +2.8% |
+| License    |       216 |       216 |        0 |       0.0% |
+| JSON       |       113 |       113 |        0 |       0.0% |
+| Powershell |       111 |       111 |        0 |       0.0% |
+| **Total**  | **1,793** | **2,329** | **+536** | **+29.9%** |
+
+## Complexity
+
+| Language   | Baseline | Current |   Delta |     Change |
+| ---------- | -------: | ------: | ------: | ---------: |
+| Go         |      114 |     134 |     +20 |     +17.5% |
+| Powershell |       20 |      20 |       0 |       0.0% |
+| **Total**  |  **134** | **154** | **+20** | **+14.9%** |
